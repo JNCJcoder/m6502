@@ -16,6 +16,8 @@ static const uint8_t M6502_FLAG_UNUSED      = 0x20;
 static const uint8_t M6502_FLAG_OVERFLOW    = 0x40;
 static const uint8_t M6502_FLAG_NEGATIVE    = 0x80;
 
+static const uint8_t M6502_MAGIC_CONSTANT   = 0x00;
+
 static const uint8_t M6502_OPCODE_CYCLES[0x100] = {
     7, 6, 2, 8, 3, 3, 5, 5, 3, 2, 2, 2, 4, 4, 6, 6,
     2, 5, 2, 8, 4, 4, 6, 6, 2, 4, 2, 7, 4, 4, 7, 7,
@@ -122,6 +124,28 @@ static inline void M6502_Opcode_TSX(M6502_t* cpu);
 static inline void M6502_Opcode_TXA(M6502_t* cpu);
 static inline void M6502_Opcode_TXS(M6502_t* cpu);
 static inline void M6502_Opcode_TYA(M6502_t* cpu);
+
+static inline void M6502_Opcode_ALR(M6502_t* cpu);
+static inline void M6502_Opcode_ANC(M6502_t* cpu);
+static inline void M6502_Opcode_ANE(M6502_t* cpu);
+static inline void M6502_Opcode_ARR(M6502_t* cpu);
+static inline void M6502_Opcode_DCP(M6502_t* cpu);
+static inline void M6502_Opcode_ISC(M6502_t* cpu);
+static inline void M6502_Opcode_LAS(M6502_t* cpu);
+static inline void M6502_Opcode_LAX(M6502_t* cpu);
+static inline void M6502_Opcode_LXA(M6502_t* cpu);
+static inline void M6502_Opcode_RLA(M6502_t* cpu);
+static inline void M6502_Opcode_RRA(M6502_t* cpu);
+static inline void M6502_Opcode_SAX(M6502_t* cpu);
+static inline void M6502_Opcode_SBX(M6502_t* cpu);
+static inline void M6502_Opcode_SHA(M6502_t* cpu);
+static inline void M6502_Opcode_SHX(M6502_t* cpu);
+static inline void M6502_Opcode_SHY(M6502_t* cpu);
+static inline void M6502_Opcode_SLO(M6502_t* cpu);
+static inline void M6502_Opcode_SRE(M6502_t* cpu);
+static inline void M6502_Opcode_TAS(M6502_t* cpu);
+static inline void M6502_Opcode_USBC(M6502_t* cpu);
+static inline void M6502_Opcode_JAM(M6502_t* cpu);
 
 static inline uint8_t M6502_ReadMemoryByte(const uint16_t address)
 {
@@ -1128,4 +1152,248 @@ static inline void M6502_Opcode_TYA(M6502_t* cpu)
     
     M6502_ZeroTest(cpu, cpu->accumulator);
     M6502_NegativeTest(cpu, cpu->accumulator);
+}
+
+static inline void M6502_Opcode_ALR(M6502_t* cpu)
+{
+    uint16_t temporary = (uint16_t)cpu->accumulator & cpu->target;
+
+    M6502_SetFlag(cpu, M6502_FLAG_CARRY, (uint8_t)(temporary & 0x1));
+    
+    temporary = (temporary >> 1);
+
+    M6502_Util_WriteResult(cpu, temporary);
+
+	M6502_ZeroTest(cpu, temporary);
+	M6502_NegativeTest(cpu, temporary);
+}
+
+static inline void M6502_Opcode_ANC(M6502_t* cpu)
+{
+    const uint16_t temporary = (uint16_t)cpu->accumulator & cpu->target;
+
+    cpu->accumulator = (uint8_t)(temporary & 0x00FF);
+
+    M6502_CarryTest(cpu, temporary);
+    M6502_ZeroTest(cpu, temporary);
+    M6502_NegativeTest(cpu, temporary);
+}
+
+static inline void M6502_Opcode_ANE(M6502_t* cpu)
+{
+    uint16_t temporary = (uint16_t)(cpu->accumulator | M6502_MAGIC_CONSTANT);
+    temporary &= (uint16_t)cpu->xRegister;
+    temporary &= cpu->target;
+
+    cpu->accumulator = (uint8_t)(temporary & 0x00FF);
+
+    M6502_ZeroTest(cpu, temporary);
+    M6502_NegativeTest(cpu, temporary);
+}
+
+static inline void M6502_Opcode_ARR(M6502_t* cpu)
+{
+    uint16_t temporary = (uint16_t)cpu->accumulator & cpu->target;
+    temporary = temporary >> 1;
+    temporary |= (cpu->statusRegister & M6502_FLAG_CARRY) << 7;
+
+    cpu->accumulator = (uint8_t)(temporary & 0x00FF);
+
+    const uint8_t bit5 = ((cpu->accumulator >> 5) & 1);
+    const uint8_t bit6 = ((cpu->accumulator >> 6) & 1);
+
+    if(bit5 == 1 && bit6 == 1)
+    {
+        cpu->statusRegister |= M6502_FLAG_CARRY;
+        cpu->statusRegister &= ~M6502_FLAG_OVERFLOW;
+    }
+    else if(bit5 == 0 && bit6 == 0)
+    {
+        cpu->statusRegister &= ~M6502_FLAG_CARRY;        
+        cpu->statusRegister &= ~M6502_FLAG_OVERFLOW;        
+    }
+    else if(bit5 == 1 && bit6 == 0)
+    {
+        cpu->statusRegister &= ~M6502_FLAG_CARRY;
+        cpu->statusRegister |= M6502_FLAG_OVERFLOW;
+    }
+    else if(bit5 == 0 && bit6 == 1)
+    {
+        cpu->statusRegister |= M6502_FLAG_CARRY;
+        cpu->statusRegister |= M6502_FLAG_OVERFLOW;
+    }
+
+	M6502_ZeroTest(cpu, temporary);
+	M6502_NegativeTest(cpu, temporary);
+}
+
+static inline void M6502_Opcode_DCP(M6502_t* cpu)
+{
+    const uint16_t temporary = cpu->target - 1;
+    const uint16_t compare = (uint16_t)cpu->accumulator - temporary;
+
+    M6502_WriteMemoryByte(cpu->address, (uint8_t)(temporary & 0x00FF));
+
+    M6502_SetFlag(cpu, M6502_FLAG_CARRY, cpu->accumulator >= (uint8_t)(temporary & 0x00FF));
+    M6502_SetFlag(cpu, M6502_FLAG_ZERO, cpu->accumulator == (uint8_t)(temporary & 0x00FF));
+    M6502_NegativeTest(cpu, compare);
+}
+
+static inline void M6502_Opcode_ISC(M6502_t* cpu)
+{
+    const uint16_t temporary = ++cpu->target;
+
+    M6502_WriteMemoryByte(cpu->address, (uint8_t)(temporary & 0x00FF));
+
+    M6502_Opcode_SBC(cpu);
+}
+
+static inline void M6502_Opcode_LAS(M6502_t* cpu)
+{
+    const uint8_t temporary = cpu->target & cpu->stackPointer;
+
+    cpu->accumulator = temporary;
+    cpu->xRegister = temporary;
+    cpu->stackPointer = temporary;
+
+    M6502_ZeroTest(cpu, (uint16_t)(temporary));
+    M6502_NegativeTest(cpu, (uint16_t)(temporary));
+}
+
+static inline void M6502_Opcode_LAX(M6502_t* cpu)
+{
+    cpu->accumulator = cpu->target;
+    cpu->xRegister = cpu->target;
+
+    M6502_ZeroTest(cpu, cpu->xRegister);
+    M6502_NegativeTest(cpu, cpu->xRegister);
+}
+
+static inline void M6502_Opcode_LXA(M6502_t* cpu)
+{
+    uint16_t temporary = ((uint16_t)cpu->accumulator | M6502_MAGIC_CONSTANT);
+    temporary &= cpu->target;
+
+    cpu->accumulator = (uint8_t)(temporary & 0x00FF);
+    cpu->xRegister = (uint8_t)(temporary & 0x00FF);
+
+    M6502_ZeroTest(cpu, cpu->xRegister);
+    M6502_NegativeTest(cpu, cpu->xRegister);
+}
+
+static inline void M6502_Opcode_RLA(M6502_t* cpu)
+{
+    uint16_t temporary = cpu->target >> 1;
+    temporary |= (cpu->statusRegister & M6502_FLAG_CARRY) << 7;
+
+    M6502_WriteMemoryByte(cpu->address, (uint8_t)(temporary & 0x00FF));
+
+    M6502_SetFlag(cpu, M6502_FLAG_CARRY, (uint8_t)(cpu->target & 0x1));
+
+    M6502_Opcode_AND(cpu);
+}
+
+static inline void M6502_Opcode_RRA(M6502_t* cpu)
+{
+    uint16_t temporary = cpu->target >> 1;
+    temporary |= (cpu->statusRegister & M6502_FLAG_CARRY) << 7;
+
+    M6502_WriteMemoryByte(cpu->address, (uint8_t)(temporary & 0x00FF));
+
+    M6502_Opcode_ADC(cpu);
+}
+
+static inline void M6502_Opcode_SAX(M6502_t* cpu)
+{
+    M6502_WriteMemoryByte(cpu->address, cpu->accumulator & cpu->xRegister);
+}
+
+static inline void M6502_Opcode_SBX(M6502_t* cpu)
+{
+    uint16_t temporary = (uint16_t)cpu->accumulator & (uint16_t)cpu->xRegister;
+    temporary -= cpu->target;
+
+    cpu->xRegister = (uint8_t)(temporary & 0x00FF);
+
+    M6502_SetFlag(cpu, M6502_FLAG_CARRY, cpu->accumulator >= cpu->xRegister);
+    M6502_SetFlag(cpu, M6502_FLAG_ZERO, cpu->accumulator == cpu->xRegister);
+    M6502_NegativeTest(cpu, temporary);
+}
+
+static inline void M6502_Opcode_SHA(M6502_t* cpu)
+{
+    uint16_t temporary = (uint16_t)cpu->xRegister & (uint16_t)cpu->accumulator;
+    temporary &= ((cpu->address >> 7) & 1) + 1;
+
+    M6502_WriteMemoryByte(cpu->address, (uint8_t)(temporary & 0x00FF));
+}
+
+static inline void M6502_Opcode_SHX(M6502_t* cpu)
+{
+    uint16_t temporary = (uint16_t)cpu->xRegister & ((cpu->address >> 7) & 1);
+    temporary += 1;
+
+    M6502_WriteMemoryByte(cpu->address, (uint8_t)(temporary & 0x00FF));
+}
+
+static inline void M6502_Opcode_SHY(M6502_t* cpu)
+{
+    uint16_t temporary = (uint16_t)cpu->yRegister & ((cpu->address >> 7) & 1);
+    temporary += 1;
+
+    M6502_WriteMemoryByte(cpu->address, (uint8_t)(temporary & 0x00FF));
+}
+
+static inline void M6502_Opcode_SLO(M6502_t* cpu)
+{
+    uint16_t temporary = (cpu->target << 1);
+
+    M6502_WriteMemoryByte(cpu->address, (uint8_t)(temporary & 0x00FF));
+    M6502_CarryTest(cpu, temporary);
+
+    temporary |= (uint16_t)cpu->accumulator;
+
+    cpu->accumulator = (uint8_t)(temporary & 0x00FF);
+
+    M6502_ZeroTest(cpu, temporary);
+    M6502_NegativeTest(cpu, temporary);
+}
+
+static inline void M6502_Opcode_SRE(M6502_t* cpu)
+{
+    uint16_t temporary = (cpu->target >> 1);
+
+    M6502_WriteMemoryByte(cpu->address, (uint8_t)(temporary & 0x00FF));
+    M6502_CarryTest(cpu, temporary);
+
+    temporary ^= (uint16_t)cpu->accumulator;
+
+    cpu->accumulator = (uint8_t)(temporary & 0x00FF);
+
+    M6502_ZeroTest(cpu, temporary);
+    M6502_NegativeTest(cpu, temporary);
+}
+
+static inline void M6502_Opcode_TAS(M6502_t* cpu)
+{
+    cpu->stackPointer = cpu->xRegister & cpu->accumulator;
+
+    uint16_t temporary = cpu->stackPointer & ((cpu->address >> 7) & 1);
+    temporary += 1;
+
+    M6502_WriteMemoryByte(cpu->address, (uint8_t)(temporary & 0x00FF));
+}
+
+static inline void M6502_Opcode_USBC(M6502_t* cpu)
+{
+    M6502_Opcode_SBC(cpu);
+    M6502_Opcode_NOP(cpu);
+}
+
+static inline void M6502_Opcode_JAM(M6502_t* cpu)
+{
+    while(1)
+    {
+        cpu->target = 0xFF;
+    }
 }
