@@ -508,13 +508,140 @@ void M6502_Step(M6502_t* cpu)
         case 0xE8: M6502_Opcode_INX(cpu);   return;
         case 0xF8: M6502_Opcode_SED(cpu);   return;
 
+        case 0xEA: M6502_Opcode_NOP(cpu);   return;
+
+        case 0x1A: M6502_Opcode_NOP(cpu);   return;
+        case 0x3A: M6502_Opcode_NOP(cpu);   return;
+        case 0x5A: M6502_Opcode_NOP(cpu);   return;
+        case 0x7A: M6502_Opcode_NOP(cpu);   return;
+        case 0xDA: M6502_Opcode_NOP(cpu);   return;
+        case 0xFA: M6502_Opcode_NOP(cpu);   return;
+        case 0x80: M6502_Opcode_NOP(cpu);   return;
+        case 0x82: M6502_Opcode_NOP(cpu);   return;
+        case 0x89: M6502_Opcode_NOP(cpu);   return;
+        case 0xC2: M6502_Opcode_NOP(cpu);   return;
+        case 0xE2: M6502_Opcode_NOP(cpu);   return;
+        case 0x04: M6502_Opcode_NOP(cpu);   return;
+        case 0x44: M6502_Opcode_NOP(cpu);   return;
+        case 0x64: M6502_Opcode_NOP(cpu);   return;
+        case 0x14: M6502_Opcode_NOP(cpu);   return;
+        case 0x34: M6502_Opcode_NOP(cpu);   return;
+        case 0x54: M6502_Opcode_NOP(cpu);   return;
+        case 0x74: M6502_Opcode_NOP(cpu);   return;
+        case 0xD4: M6502_Opcode_NOP(cpu);   return;
+        case 0xF4: M6502_Opcode_NOP(cpu);   return;
+        case 0x0C: M6502_Opcode_NOP(cpu);   return;
         case 0x1C: M6502_Opcode_NOP(cpu);   return;
         case 0x3C: M6502_Opcode_NOP(cpu);   return;
         case 0x5C: M6502_Opcode_NOP(cpu);   return;
         case 0x7C: M6502_Opcode_NOP(cpu);   return;
         case 0xDC: M6502_Opcode_NOP(cpu);   return;
-        case 0xEA: M6502_Opcode_NOP(cpu);   return;
         case 0xFC: M6502_Opcode_NOP(cpu);   return;
+
+        case 0x02: M6502_Opcode_JAM(cpu);   return;
+        case 0x12: M6502_Opcode_JAM(cpu);   return;
+        case 0x22: M6502_Opcode_JAM(cpu);   return;
+        case 0x32: M6502_Opcode_JAM(cpu);   return;
+        case 0x42: M6502_Opcode_JAM(cpu);   return;
+        case 0x52: M6502_Opcode_JAM(cpu);   return;
+        case 0x62: M6502_Opcode_JAM(cpu);   return;
+        case 0x72: M6502_Opcode_JAM(cpu);   return;
+        case 0x92: M6502_Opcode_JAM(cpu);   return;
+        case 0xB2: M6502_Opcode_JAM(cpu);   return;
+        case 0xD2: M6502_Opcode_JAM(cpu);   return;
+        case 0xF2: M6502_Opcode_JAM(cpu);   return;
+
+        case 0x4B:
+        {
+            M6502_Address_Immediate(cpu);
+            M6502_Opcode_ALR(cpu);
+            return;
+        }
+
+        case 0x0B:
+        case 0x2B:
+        {
+            M6502_Address_Immediate(cpu);
+            M6502_Opcode_ANC(cpu);
+            return;
+        }
+
+
+        case 0x8B:
+        {
+            M6502_Address_Immediate(cpu);
+            M6502_Opcode_ANE(cpu);
+            return;
+        }
+
+        case 0xB6:
+        {
+            M6502_Address_Immediate(cpu);
+            M6502_Opcode_ARR(cpu);
+            return;
+        }
+
+        case 0xBB:
+        {
+            M6502_Address_AbsoluteY(cpu);
+            M6502_Opcode_LAS(cpu);
+            return;
+        }
+
+        case 0xAB:
+        {
+            M6502_Address_Immediate(cpu);
+            M6502_Opcode_LXA(cpu);
+            return;
+        }
+
+        case 0xCB:
+        {
+            M6502_Address_Immediate(cpu);
+            M6502_Opcode_SBX(cpu);
+            return;
+        }
+
+        case 0x9F:
+        {
+            M6502_Address_AbsoluteY(cpu);
+            M6502_Opcode_SHA(cpu);
+            return;
+        }
+
+        case 0x93:
+        {
+            M6502_Address_IndirectY(cpu);
+            M6502_Opcode_SHA(cpu);
+            return;
+        }
+
+        case 0x9C: 
+        {
+            M6502_Address_AbsoluteX(cpu);
+            M6502_Opcode_SHY(cpu);
+            return;
+        }
+        case 0x9E:
+        {
+            M6502_Address_AbsoluteY(cpu);
+            M6502_Opcode_SHX(cpu);
+            return;
+        }
+
+        case 0x9B:
+        {
+            M6502_Address_AbsoluteY(cpu);
+            M6502_Opcode_TAS(cpu);
+            return;
+        }
+
+        case 0xEB:
+        {
+            M6502_Address_Immediate(cpu);
+            M6502_Opcode_USBC(cpu);
+            return;
+        }
     
         default:                            break;
     }
@@ -523,6 +650,7 @@ void M6502_Step(M6502_t* cpu)
     {
         case 0x01:  M6502_Opcode_Group01(cpu);  break;
         case 0x02:  M6502_Opcode_Group10(cpu);  break;
+        case 0x03:  M6502_Opcode_Group11(cpu);  break;
         case 0x00:  M6502_Opcode_Group00(cpu);  break;
         default:                                break;
     }
@@ -601,6 +729,36 @@ static inline void M6502_Opcode_Group10(M6502_t* cpu)
         case 0x05:  M6502_Opcode_LDX(cpu);  break;
         case 0x06:  M6502_Opcode_DEC(cpu);  break;
         case 0x07:  M6502_Opcode_INC(cpu);  break;
+    }
+}
+
+static inline void M6502_Opcode_Group11(M6502_t* cpu)
+{
+    const uint8_t instruction = (cpu->opcode & 0xE0) >> 5;
+    const uint8_t addressMode = (cpu->opcode & 0x1C) >> 2;
+
+    switch(addressMode)
+    {
+        case 0x00:  M6502_Address_IndirectX(cpu);   break;
+        case 0x01:  M6502_Address_ZeroPage(cpu);    break;
+        case 0x02:  M6502_Address_Immediate(cpu);   break;
+        case 0x03:  M6502_Address_Absolute(cpu);    break;
+        case 0x04:  M6502_Address_IndirectY(cpu);   break;
+        case 0x05:  M6502_Address_ZeroPageX(cpu);   break;
+        case 0x06:  M6502_Address_AbsoluteY(cpu);   break;
+        case 0x07:  M6502_Address_AbsoluteX(cpu);   break;
+    }
+
+    switch (instruction)
+    {
+        case 0x00:  M6502_Opcode_SLO(cpu);  break;
+        case 0x01:  M6502_Opcode_RLA(cpu);  break;
+        case 0x02:  M6502_Opcode_SRE(cpu);  break;
+        case 0x03:  M6502_Opcode_RRA(cpu);  break;
+        case 0x04:  M6502_Opcode_SAX(cpu);  break;
+        case 0x05:  M6502_Opcode_LAX(cpu);  break;
+        case 0x06:  M6502_Opcode_DCP(cpu);  break;
+        case 0x07:  M6502_Opcode_ISC(cpu);  break;
     }
 }
 
