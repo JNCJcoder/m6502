@@ -1121,7 +1121,6 @@ static inline void M6502_Opcode_LSR(M6502_t* cpu)
 
     M6502_SetFlag(cpu, M6502_FLAG_CARRY, (uint8_t)(cpu->target & 0x1));
 	M6502_ZeroTest(cpu, temporary);
-	// M6502_NegativeTest(cpu, temporary);
     M6502_SetFlag(cpu, M6502_FLAG_NEGATIVE, 0);
 }
 
