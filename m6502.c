@@ -42,18 +42,18 @@ static inline uint16_t  M6502_ReadMemoryWord(const uint16_t address);
 static inline void      M6502_WriteMemoryByte(const uint16_t address, const uint8_t value);
 static inline void      M6502_WriteMemoryWord(const uint16_t address, const uint16_t value);
 
-static inline void      M6502_SetFlag(M6502_t* cpu, uint8_t flag, uint8_t value);
-static inline uint8_t   M6502_GetFlag(M6502_t* cpu, uint8_t flag);
+static inline void      M6502_SetFlag(M6502_t* cpu, const uint8_t flag, const uint8_t value);
+static inline uint8_t   M6502_GetFlag(M6502_t* cpu, const uint8_t flag);
 
 static inline void      M6502_PushByte(M6502_t* cpu, const uint8_t value);
 static inline void      M6502_PushWord(M6502_t* cpu, const uint16_t value);
 static inline uint8_t   M6502_PullByte(M6502_t* cpu);
 static inline uint16_t  M6502_PullWord(M6502_t* cpu);
 
-static inline void M6502_CarryTest(M6502_t* cpu, uint16_t value);
-static inline void M6502_ZeroTest(M6502_t* cpu, uint16_t value);
-static inline void M6502_OverFlowTest(M6502_t* cpu, uint16_t value, uint16_t result);
-static inline void M6502_NegativeTest(M6502_t* cpu, uint16_t value);
+static inline void M6502_CarryTest(M6502_t* cpu, const uint16_t value);
+static inline void M6502_ZeroTest(M6502_t* cpu, const uint16_t value);
+static inline void M6502_OverFlowTest(M6502_t* cpu, const uint16_t value, const uint16_t result);
+static inline void M6502_NegativeTest(M6502_t* cpu, const uint16_t value);
 
 static inline void M6502_Address_Accumulator(M6502_t* cpu);
 static inline void M6502_Address_Immediate(M6502_t* cpu);
@@ -174,13 +174,13 @@ static inline void M6502_WriteMemoryWord(const uint16_t address, const uint16_t 
     M6502_ExternalWriteMemory(address + 1,  low);
 }
 
-static inline void M6502_SetFlag(M6502_t* cpu, uint8_t flag, uint8_t value)
+static inline void M6502_SetFlag(M6502_t* cpu, const uint8_t flag, const uint8_t value)
 {
     if (value)  cpu->statusRegister |= flag;
 	else        cpu->statusRegister &= ~flag;
 }
 
-static inline uint8_t M6502_GetFlag(M6502_t* cpu, uint8_t flag)
+static inline uint8_t M6502_GetFlag(M6502_t* cpu, const uint8_t flag)
 {
     return ((cpu->statusRegister & flag) > 0) ? 1 : 0;
 }
@@ -213,19 +213,19 @@ static inline uint16_t M6502_PullWord(M6502_t* cpu)
 }
 
 
-static inline void M6502_CarryTest(M6502_t* cpu, uint16_t value)
+static inline void M6502_CarryTest(M6502_t* cpu, const uint16_t value)
 {
     if(value & 0xFF00)  cpu->statusRegister |= M6502_FLAG_CARRY; 
     else                cpu->statusRegister &= (~M6502_FLAG_CARRY);
 }
 
-static inline void M6502_ZeroTest(M6502_t* cpu, uint16_t value)
+static inline void M6502_ZeroTest(M6502_t* cpu, const uint16_t value)
 {
     if(value & 0x00FF)  cpu->statusRegister &= (~M6502_FLAG_ZERO); 
     else                cpu->statusRegister |= M6502_FLAG_ZERO;
 }
 
-static inline void M6502_OverFlowTest(M6502_t* cpu, uint16_t value, uint16_t result)
+static inline void M6502_OverFlowTest(M6502_t* cpu, const uint16_t value, const uint16_t result)
 {
     const uint16_t temporaryA = (result ^ (uint16_t)cpu->accumulator);
     const uint16_t temporaryB = (result ^ value);
@@ -235,7 +235,7 @@ static inline void M6502_OverFlowTest(M6502_t* cpu, uint16_t value, uint16_t res
     else                cpu->statusRegister &= (~M6502_FLAG_OVERFLOW);
 }
 
-static inline void M6502_NegativeTest(M6502_t* cpu, uint16_t value)
+static inline void M6502_NegativeTest(M6502_t* cpu, const uint16_t value)
 {
     if(value & 0x0080)  cpu->statusRegister |= M6502_FLAG_NEGATIVE; 
     else                cpu->statusRegister &= (~M6502_FLAG_NEGATIVE);
@@ -377,7 +377,7 @@ static inline void M6502_Address_IndirectY(M6502_t* cpu)
 }
 
 
-static inline void M6502_Util_WriteResult(M6502_t* cpu, uint16_t result)
+static inline void M6502_Util_WriteResult(M6502_t* cpu, const uint16_t result)
 {
     const uint8_t group     = (cpu->opcode & 0x3);
     const uint8_t address   = ((cpu->opcode & 0x1C) >> 2);
