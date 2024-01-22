@@ -2,7 +2,6 @@
 #define __M6502_H__
 
 #include <stdint.h>
-#include <stdio.h> // REMOVE THIS
 
 typedef struct
 {
