@@ -409,6 +409,7 @@ static inline void M6502_Util_BRANCH(M6502_t* cpu)
 
 static inline void M6502_Opcode_Group01(M6502_t* cpu);
 static inline void M6502_Opcode_Group10(M6502_t* cpu);
+static inline void M6502_Opcode_Group11(M6502_t* cpu);
 static inline void M6502_Opcode_Group00(M6502_t* cpu);
 static inline void M6502_Opcode_Group00_Branch(M6502_t* cpu);
 
