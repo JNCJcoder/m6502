@@ -1127,7 +1127,7 @@ static inline void M6502_Opcode_LSR(M6502_t* cpu)
 
 static inline void M6502_Opcode_NOP(M6502_t* cpu)
 {
-    /* TO-DO */
+    /* Nothing */
 }
 
 static inline void M6502_Opcode_ORA(M6502_t* cpu)
