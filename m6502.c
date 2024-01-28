@@ -187,7 +187,9 @@ static inline uint8_t M6502_GetFlag(M6502_t* cpu, const uint8_t flag)
 
 static inline void M6502_PushByte(M6502_t* cpu, const uint8_t value)
 {
-    M6502_ExternalWriteMemory(M6502_STACK_ADDRESS + (cpu->stackPointer-- & 0xFF), value);
+    M6502_ExternalWriteMemory(M6502_STACK_ADDRESS + cpu->stackPointer, value);
+    
+    cpu->stackPointer = (cpu->stackPointer - 1) & 0xFF;
 }
 
 static inline void M6502_PushWord(M6502_t* cpu, const uint16_t value)
@@ -201,7 +203,9 @@ static inline void M6502_PushWord(M6502_t* cpu, const uint16_t value)
 
 static inline uint8_t M6502_PullByte(M6502_t* cpu)
 {
-    return M6502_ExternalReadMemory(M6502_STACK_ADDRESS + (++cpu->stackPointer & 0xFF));
+    cpu->stackPointer = (cpu->stackPointer + 1) & 0xFF;
+
+    return M6502_ExternalReadMemory(M6502_STACK_ADDRESS + cpu->stackPointer);
 }
 
 static inline uint16_t M6502_PullWord(M6502_t* cpu)
