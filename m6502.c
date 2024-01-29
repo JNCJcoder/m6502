@@ -579,7 +579,7 @@ void M6502_Step(M6502_t* cpu)
             return;
         }
 
-        case 0xB6:
+        case 0x6B:
         {
             M6502_Address_Immediate(cpu);
             M6502_Opcode_ARR(cpu);
