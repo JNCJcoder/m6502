@@ -219,14 +219,12 @@ static inline uint16_t M6502_PullWord(M6502_t* cpu)
 
 static inline void M6502_CarryTest(M6502_t* cpu, const uint16_t value)
 {
-    if(value & 0xFF00)  cpu->statusRegister |= M6502_FLAG_CARRY; 
-    else                cpu->statusRegister &= (~M6502_FLAG_CARRY);
+    M6502_SetFlag(cpu, M6502_FLAG_CARRY, !!(value & 0xFF00));
 }
 
 static inline void M6502_ZeroTest(M6502_t* cpu, const uint16_t value)
 {
-    if(value & 0x00FF)  cpu->statusRegister &= (~M6502_FLAG_ZERO); 
-    else                cpu->statusRegister |= M6502_FLAG_ZERO;
+    M6502_SetFlag(cpu, M6502_FLAG_ZERO, !(value & 0x00FF));
 }
 
 static inline void M6502_OverFlowTest(M6502_t* cpu, const uint16_t value, const uint16_t result)
@@ -235,14 +233,12 @@ static inline void M6502_OverFlowTest(M6502_t* cpu, const uint16_t value, const 
     const uint16_t temporaryB = (result ^ value);
     const uint16_t temporaryResult = temporaryA & temporaryB & 0x0080;
 
-    if(temporaryResult) cpu->statusRegister |= M6502_FLAG_OVERFLOW; 
-    else                cpu->statusRegister &= (~M6502_FLAG_OVERFLOW);
+    M6502_SetFlag(cpu, M6502_FLAG_OVERFLOW, temporaryResult);
 }
 
 static inline void M6502_NegativeTest(M6502_t* cpu, const uint16_t value)
 {
-    if(value & 0x0080)  cpu->statusRegister |= M6502_FLAG_NEGATIVE; 
-    else                cpu->statusRegister &= (~M6502_FLAG_NEGATIVE);
+    M6502_SetFlag(cpu, M6502_FLAG_NEGATIVE, (value & 0x0080));
 }
 
 
@@ -440,7 +436,8 @@ void M6502_Reset(M6502_t* cpu)
 {
     cpu->programCounter = M6502_ReadMemoryWord(M6502_RESETVECTOR_ADDRESS);
     cpu->stackPointer   = M6502_STACK_START_ADDRESS;
-    cpu->statusRegister |= M6502_FLAG_INTERRUPT | M6502_FLAG_UNUSED;
+    M6502_SetFlag(cpu, M6502_FLAG_INTERRUPT, 1);
+    M6502_SetFlag(cpu, M6502_FLAG_UNUSED, 1);
     cpu->cycles = 8;
 }
 
@@ -454,7 +451,7 @@ void M6502_IRQ(M6502_t* cpu)
     M6502_PushWord(cpu, cpu->programCounter);
     M6502_PushByte(cpu, cpu->statusRegister & ~M6502_FLAG_BREAK);
 
-    cpu->statusRegister |= M6502_FLAG_INTERRUPT;
+    M6502_SetFlag(cpu, M6502_FLAG_INTERRUPT, 1);
     cpu->programCounter = M6502_ReadMemoryWord(M6502_IRQVECTOR_ADDRESS);
 
     cpu->cycles = 7;
@@ -464,7 +461,7 @@ void M6502_NMI(M6502_t* cpu)
 {
     M6502_PushWord(cpu, cpu->programCounter);
     M6502_PushByte(cpu, cpu->statusRegister & ~M6502_FLAG_BREAK);
-    cpu->statusRegister |= M6502_FLAG_INTERRUPT;
+    M6502_SetFlag(cpu, M6502_FLAG_INTERRUPT, 1);
 
     cpu->programCounter = M6502_ReadMemoryWord(M6502_NMIVECTOR_ADDRESS);
     
@@ -479,7 +476,7 @@ void M6502_Step(M6502_t* cpu)
         return;
     }
 
-    cpu->statusRegister |= M6502_FLAG_UNUSED;
+    M6502_SetFlag(cpu, M6502_FLAG_UNUSED, 1);
 
     cpu->opcode = M6502_ExternalReadMemory(cpu->programCounter++);
     cpu->cycles = M6502_OPCODE_CYCLES[cpu->opcode];
@@ -887,7 +884,7 @@ static inline void M6502_Opcode_ASL(M6502_t* cpu)
 
 static inline void M6502_Opcode_BCC(M6502_t* cpu)
 {
-    if((cpu->statusRegister & M6502_FLAG_CARRY) == 0)
+    if(M6502_GetFlag(cpu, M6502_FLAG_CARRY) == 0)
     {
         M6502_Util_BRANCH(cpu);
     }
@@ -895,7 +892,7 @@ static inline void M6502_Opcode_BCC(M6502_t* cpu)
 
 static inline void M6502_Opcode_BCS(M6502_t* cpu)
 {
-    if((cpu->statusRegister & M6502_FLAG_CARRY) == M6502_FLAG_CARRY)
+    if(M6502_GetFlag(cpu, M6502_FLAG_CARRY) == 1)
     {
         M6502_Util_BRANCH(cpu);
     }
@@ -903,7 +900,7 @@ static inline void M6502_Opcode_BCS(M6502_t* cpu)
 
 static inline void M6502_Opcode_BEQ(M6502_t* cpu)
 {
-    if((cpu->statusRegister & M6502_FLAG_ZERO) == M6502_FLAG_ZERO)
+    if(M6502_GetFlag(cpu, M6502_FLAG_ZERO) == 1)
     {
         M6502_Util_BRANCH(cpu);
     }
@@ -919,7 +916,7 @@ static inline void M6502_Opcode_BIT(M6502_t* cpu)
 
 static inline void M6502_Opcode_BMI(M6502_t* cpu)
 {
-    if((cpu->statusRegister & M6502_FLAG_NEGATIVE) == M6502_FLAG_NEGATIVE)
+    if(M6502_GetFlag(cpu, M6502_FLAG_NEGATIVE) == 1)
     {
         M6502_Util_BRANCH(cpu);
     }
@@ -927,7 +924,7 @@ static inline void M6502_Opcode_BMI(M6502_t* cpu)
 
 static inline void M6502_Opcode_BNE(M6502_t* cpu)
 {
-    if((cpu->statusRegister & M6502_FLAG_ZERO) == 0)
+    if(M6502_GetFlag(cpu, M6502_FLAG_ZERO) == 0)
     {
         M6502_Util_BRANCH(cpu);
     }
@@ -935,7 +932,7 @@ static inline void M6502_Opcode_BNE(M6502_t* cpu)
 
 static inline void M6502_Opcode_BPL(M6502_t* cpu)
 {
-    if((cpu->statusRegister & M6502_FLAG_NEGATIVE) == 0)
+    if(M6502_GetFlag(cpu, M6502_FLAG_NEGATIVE) == 0)
     {
         M6502_Util_BRANCH(cpu);
     }
@@ -945,14 +942,14 @@ static inline void M6502_Opcode_BRK(M6502_t* cpu)
 {
     M6502_PushWord(cpu, ++cpu->programCounter);
     M6502_PushByte(cpu, cpu->statusRegister | M6502_FLAG_BREAK);
-    cpu->statusRegister |= M6502_FLAG_INTERRUPT;
+    M6502_SetFlag(cpu, M6502_FLAG_INTERRUPT, 1);
 
     cpu->programCounter = M6502_ReadMemoryWord(M6502_IRQVECTOR_ADDRESS);
 }
 
 static inline void M6502_Opcode_BVC(M6502_t* cpu)
 {
-    if((cpu->statusRegister & M6502_FLAG_OVERFLOW) == 0)
+    if(M6502_GetFlag(cpu, M6502_FLAG_OVERFLOW) == 0)
     {
         M6502_Util_BRANCH(cpu);
     }
@@ -960,7 +957,7 @@ static inline void M6502_Opcode_BVC(M6502_t* cpu)
 
 static inline void M6502_Opcode_BVS(M6502_t* cpu)
 {
-    if((cpu->statusRegister & M6502_FLAG_OVERFLOW) == M6502_FLAG_OVERFLOW)
+    if(M6502_GetFlag(cpu, M6502_FLAG_OVERFLOW) == 1)
     {
         M6502_Util_BRANCH(cpu);
     }
@@ -968,22 +965,22 @@ static inline void M6502_Opcode_BVS(M6502_t* cpu)
 
 static inline void M6502_Opcode_CLC(M6502_t* cpu)
 {
-    cpu->statusRegister &= ~M6502_FLAG_CARRY;
+    M6502_SetFlag(cpu, M6502_FLAG_CARRY, 0);
 }
 
 static inline void M6502_Opcode_CLD(M6502_t* cpu)
 {
-    cpu->statusRegister &= ~M6502_FLAG_DECIMAL;
+    M6502_SetFlag(cpu, M6502_FLAG_DECIMAL, 0);
 }
 
 static inline void M6502_Opcode_CLI(M6502_t* cpu)
 {
-    cpu->statusRegister &= ~M6502_FLAG_INTERRUPT;
+    M6502_SetFlag(cpu, M6502_FLAG_INTERRUPT, 0);
 }
 
 static inline void M6502_Opcode_CLV(M6502_t* cpu)
 {
-    cpu->statusRegister &= ~M6502_FLAG_OVERFLOW;
+    M6502_SetFlag(cpu, M6502_FLAG_OVERFLOW, 0);
 }
 
 static inline void M6502_Opcode_CMP(M6502_t* cpu)
@@ -1164,7 +1161,7 @@ static inline void M6502_Opcode_PLP(M6502_t* cpu)
 static inline void M6502_Opcode_ROL(M6502_t* cpu)
 {
     uint16_t temporary = cpu->target << 1;
-    temporary |= (cpu->statusRegister & M6502_FLAG_CARRY);
+    temporary |= M6502_GetFlag(cpu, M6502_FLAG_CARRY);
 	
     M6502_Util_WriteResult(cpu, temporary);
 
@@ -1176,7 +1173,7 @@ static inline void M6502_Opcode_ROL(M6502_t* cpu)
 static inline void M6502_Opcode_ROR(M6502_t* cpu)
 {
     uint16_t temporary = cpu->target >> 1;
-    temporary |= (cpu->statusRegister & M6502_FLAG_CARRY) << 7;
+    temporary |= M6502_GetFlag(cpu, M6502_FLAG_CARRY) << 7;
 
     M6502_Util_WriteResult(cpu, temporary);
 
@@ -1233,17 +1230,17 @@ static inline void M6502_Opcode_SBC(M6502_t* cpu)
 
 static inline void M6502_Opcode_SEC(M6502_t* cpu)
 {
-    cpu->statusRegister |= M6502_FLAG_CARRY;
+    M6502_SetFlag(cpu, M6502_FLAG_CARRY, 1);
 }
 
 static inline void M6502_Opcode_SED(M6502_t* cpu)
 {
-    cpu->statusRegister |= M6502_FLAG_DECIMAL;
+    M6502_SetFlag(cpu, M6502_FLAG_DECIMAL, 1);
 }
 
 static inline void M6502_Opcode_SEI(M6502_t* cpu)
 {
-    cpu->statusRegister |= M6502_FLAG_INTERRUPT;
+    M6502_SetFlag(cpu, M6502_FLAG_INTERRUPT, 1);
 }
 
 static inline void M6502_Opcode_STA(M6502_t* cpu)
@@ -1347,7 +1344,7 @@ static inline void M6502_Opcode_ARR(M6502_t* cpu)
 {
     uint16_t temporary = (uint16_t)cpu->accumulator & cpu->target;
     temporary = temporary >> 1;
-    temporary |= (cpu->statusRegister & M6502_FLAG_CARRY) << 7;
+    temporary |= M6502_GetFlag(cpu, M6502_FLAG_CARRY) << 7;
 
     cpu->accumulator = (uint8_t)(temporary & 0x00FF);
 
@@ -1356,23 +1353,24 @@ static inline void M6502_Opcode_ARR(M6502_t* cpu)
 
     if(bit5 == 1 && bit6 == 1)
     {
-        cpu->statusRegister |= M6502_FLAG_CARRY;
-        cpu->statusRegister &= ~M6502_FLAG_OVERFLOW;
+        M6502_SetFlag(cpu, M6502_FLAG_CARRY, 1);
+        M6502_SetFlag(cpu, M6502_FLAG_OVERFLOW, 0);
     }
     else if(bit5 == 0 && bit6 == 0)
     {
-        cpu->statusRegister &= ~M6502_FLAG_CARRY;        
-        cpu->statusRegister &= ~M6502_FLAG_OVERFLOW;        
+        M6502_SetFlag(cpu, M6502_FLAG_CARRY, 0);     
+        M6502_SetFlag(cpu, M6502_FLAG_OVERFLOW, 0);     
     }
     else if(bit5 == 1 && bit6 == 0)
     {
-        cpu->statusRegister &= ~M6502_FLAG_CARRY;
-        cpu->statusRegister |= M6502_FLAG_OVERFLOW;
+
+        M6502_SetFlag(cpu, M6502_FLAG_CARRY, 0);
+        M6502_SetFlag(cpu, M6502_FLAG_OVERFLOW, 1);
     }
     else if(bit5 == 0 && bit6 == 1)
     {
-        cpu->statusRegister |= M6502_FLAG_CARRY;
-        cpu->statusRegister |= M6502_FLAG_OVERFLOW;
+        M6502_SetFlag(cpu, M6502_FLAG_CARRY, 1);
+        M6502_SetFlag(cpu, M6502_FLAG_OVERFLOW, 1);
     }
 
 	M6502_ZeroTest(cpu, temporary);
@@ -1436,7 +1434,7 @@ static inline void M6502_Opcode_LXA(M6502_t* cpu)
 static inline void M6502_Opcode_RLA(M6502_t* cpu)
 {
     uint16_t temporary = cpu->target >> 1;
-    temporary |= (cpu->statusRegister & M6502_FLAG_CARRY) << 7;
+    temporary |= M6502_GetFlag(cpu, M6502_FLAG_CARRY) << 7;
 
     M6502_WriteMemoryByte(cpu->address, (uint8_t)(temporary & 0x00FF));
 
@@ -1448,7 +1446,7 @@ static inline void M6502_Opcode_RLA(M6502_t* cpu)
 static inline void M6502_Opcode_RRA(M6502_t* cpu)
 {
     uint16_t temporary = cpu->target >> 1;
-    temporary |= (cpu->statusRegister & M6502_FLAG_CARRY) << 7;
+    temporary |= M6502_GetFlag(cpu, M6502_FLAG_CARRY) << 7;
 
     M6502_WriteMemoryByte(cpu->address, (uint8_t)(temporary & 0x00FF));
 
