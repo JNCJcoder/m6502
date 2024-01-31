@@ -827,47 +827,41 @@ static inline void M6502_Opcode_Group00_Branch(M6502_t* cpu)
 static inline void M6502_Opcode_ADC(M6502_t* cpu)
 {
     uint16_t temporary = (uint16_t)cpu->accumulator + cpu->target;
-    temporary += (uint16_t)(cpu->statusRegister & M6502_FLAG_CARRY);
+    temporary += M6502_GetFlag(cpu, M6502_FLAG_CARRY);
 
 #ifndef M6502_NES_CPU
     if (M6502_GetFlag(cpu, M6502_FLAG_DECIMAL))
     {
-        uint16_t result_bcd = 0x00;
+        uint16_t high = (cpu->accumulator & 0xF0) + (cpu->target & 0xF0);
+        uint16_t low = (cpu->accumulator & 0x0F) + (cpu->target & 0x0F);
+        low += M6502_GetFlag(cpu, M6502_FLAG_CARRY);
 
-        result_bcd = (cpu->accumulator & 0x0F) + (cpu->target & 0x0F);
-        result_bcd += (uint16_t)(cpu->statusRegister & M6502_FLAG_CARRY);
-
-        if(result_bcd >= 0xA)
+        if(low >= 0xA)
         {
-            result_bcd = ((result_bcd + 0x06) & 0x0F) + 0x10;
-        }
-        
-        result_bcd += (cpu->accumulator & 0xF0) + (cpu->target & 0xF0);
-        
-        M6502_SetFlag(cpu, M6502_FLAG_NEGATIVE, (uint8_t)(result_bcd & M6502_FLAG_NEGATIVE));
-        
-        if(result_bcd >= 0xA0)
-        {
-            result_bcd += 0x60;
+            low = ((low + 0x06) & 0x0F) + 0x10;
         }
 
-        M6502_SetFlag(cpu, M6502_FLAG_CARRY, result_bcd >= 0x100);
-        M6502_SetFlag(cpu, M6502_FLAG_OVERFLOW, result_bcd & 0xFF80);
+        temporary = high + low;
+        M6502_SetFlag(cpu, M6502_FLAG_NEGATIVE, (temporary & 0x80));
 
-        M6502_ZeroTest(cpu, temporary);
+        if(temporary >= 0xA0)
+        {
+            temporary += 0x60;
+        }
 
-        cpu->accumulator = (uint8_t)(result_bcd & 0x00FF);
+        M6502_SetFlag(cpu, M6502_FLAG_OVERFLOW, (temporary & 0xFF80));
+        M6502_SetFlag(cpu, M6502_FLAG_CARRY, (temporary >= 0x100));
     }
     else
 #endif
     {
         M6502_CarryTest(cpu, temporary);
-        M6502_ZeroTest(cpu, temporary);
         M6502_NegativeTest(cpu, temporary);
         M6502_OverFlowTest(cpu, cpu->target, temporary);
-
-        cpu->accumulator = (uint8_t)(temporary & 0x00FF);
     }
+    M6502_ZeroTest(cpu, temporary);
+
+    cpu->accumulator = (uint8_t)(temporary & 0x00FF);
 }
 
 static inline void M6502_Opcode_AND(M6502_t* cpu)
@@ -1204,41 +1198,37 @@ static inline void M6502_Opcode_RTS(M6502_t* cpu)
 
 static inline void M6502_Opcode_SBC(M6502_t* cpu)
 {
+    const uint8_t carry = M6502_GetFlag(cpu, M6502_FLAG_CARRY);
     uint16_t temporary = (uint16_t)cpu->accumulator + (cpu->target ^ 0x00FF);
-    temporary += (uint16_t)M6502_GetFlag(cpu, M6502_FLAG_CARRY);
+    temporary += (uint16_t)carry;
 
     M6502_ZeroTest(cpu, temporary);
     M6502_CarryTest(cpu, temporary);
-    M6502_NegativeTest(cpu, temporary);
     M6502_OverFlowTest(cpu, (cpu->target ^ 0x00FF), temporary);
+    M6502_NegativeTest(cpu, (temporary & 0x00FF));
 
 #ifndef M6502_NES_CPU
     if (M6502_GetFlag(cpu, M6502_FLAG_DECIMAL))
     {
-        uint16_t temporaryC = (uint16_t)(cpu->statusRegister & M6502_FLAG_CARRY);
-        uint16_t result_bcd = 0x0000;
+        uint16_t high = (cpu->accumulator & 0xF0) - (cpu->target & 0xF0);
+        uint16_t low = (cpu->accumulator & 0x0F) - (cpu->target & 0x0F);
+        low += (uint16_t)carry - 1;
 
-        result_bcd = (cpu->accumulator & 0x0F) - (cpu->target & 0x0F) + temporaryC -1;
-
-        if(result_bcd & 0x8000)
+        if(low & 0x8000)
         {
-            result_bcd = ((result_bcd - 0x06) & 0x0F) - 0x10;
+            low = ((low - 0x06) & 0x0F) - 0x10;
         }
 
-        result_bcd = (cpu->accumulator & 0xF0) - (cpu->target & 0xF0) + result_bcd;
+        temporary = high + low;
 
-        if(result_bcd & 0x8000)
+        if(temporary & 0x8000)
         {
-            result_bcd = result_bcd - 0x60;
+            temporary = temporary - 0x60;
         }
-
-        cpu->accumulator = (uint8_t)(result_bcd & 0x00FF);
     }
-    else
 #endif
-    { 
-        cpu->accumulator = (uint8_t)(temporary & 0x00FF);
-    }
+
+    cpu->accumulator = (uint8_t)(temporary & 0x00FF);
 }
 
 static inline void M6502_Opcode_SEC(M6502_t* cpu)
