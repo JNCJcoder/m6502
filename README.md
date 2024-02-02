@@ -1,6 +1,11 @@
 # M6502 - MOS 6502 Emulator
 
-A 6502 Emulator written in C.
+A NMOS 6502 Emulator written in C.
+
+Tests:
+
+- [x] 6502_functional_test
+- [x] 6502_decimal_test
 
 ## 🏗️ How-To (Example)
 
