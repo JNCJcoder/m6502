@@ -16,6 +16,9 @@ static const uint8_t M6502_FLAG_UNUSED      = 0x20;
 static const uint8_t M6502_FLAG_OVERFLOW    = 0x40;
 static const uint8_t M6502_FLAG_NEGATIVE    = 0x80;
 
+static const uint8_t M6502_INTERRUPT_NMI    = 0xF0;
+static const uint8_t M6502_INTERRUPT_IRQ    = 0x0F;
+
 static const uint8_t M6502_MAGIC_CONSTANT   = 0x00;
 
 static const uint8_t M6502_OPCODE_CYCLES[0x100] = {
@@ -406,6 +409,31 @@ static inline void M6502_Util_BRANCH(M6502_t* cpu)
     cpu->programCounter = address;
 }
 
+static inline void M6502_Util_Interrupt(M6502_t* cpu)
+{
+    M6502_PushWord(cpu, cpu->programCounter);
+    M6502_PushByte(cpu, cpu->statusRegister & ~M6502_FLAG_BREAK);
+    M6502_SetFlag(cpu, M6502_FLAG_INTERRUPT, 1);
+
+    if ((cpu->pendingInterrupts & M6502_INTERRUPT_NMI) != 0)
+    {
+        cpu->programCounter = M6502_ReadMemoryWord(M6502_NMIVECTOR_ADDRESS);
+
+        cpu->pendingInterrupts &= ~M6502_INTERRUPT_NMI;
+        cpu->interruptFlags |= M6502_INTERRUPT_NMI;
+
+        cpu->cycles = 8;
+    }
+    else if ((cpu->pendingInterrupts & M6502_INTERRUPT_IRQ) != 0)
+    {
+        cpu->programCounter = M6502_ReadMemoryWord(M6502_IRQVECTOR_ADDRESS);
+
+        cpu->pendingInterrupts &= ~M6502_INTERRUPT_IRQ;
+        cpu->interruptFlags |= M6502_INTERRUPT_IRQ;
+
+        cpu->cycles = 7;
+    }
+}
 
 static inline void M6502_Opcode_Group01(M6502_t* cpu);
 static inline void M6502_Opcode_Group10(M6502_t* cpu);
@@ -434,8 +462,10 @@ void M6502_Init(M6502_t* cpu, uint16_t startAddress)
 
 void M6502_Reset(M6502_t* cpu)
 {
-    cpu->programCounter = M6502_ReadMemoryWord(M6502_RESETVECTOR_ADDRESS);
-    cpu->stackPointer   = M6502_STACK_START_ADDRESS;
+    cpu->programCounter     = M6502_ReadMemoryWord(M6502_RESETVECTOR_ADDRESS);
+    cpu->stackPointer       = M6502_STACK_START_ADDRESS;
+    cpu->interruptFlags     = 0x00;
+    cpu->pendingInterrupts  = 0x00;
     M6502_SetFlag(cpu, M6502_FLAG_INTERRUPT, 1);
     M6502_SetFlag(cpu, M6502_FLAG_UNUSED, 1);
     cpu->cycles = 8;
@@ -443,29 +473,12 @@ void M6502_Reset(M6502_t* cpu)
 
 void M6502_IRQ(M6502_t* cpu)
 {
-    if(M6502_GetFlag(cpu, M6502_FLAG_INTERRUPT) == 1)
-    {
-        return;
-    }
-
-    M6502_PushWord(cpu, cpu->programCounter);
-    M6502_PushByte(cpu, cpu->statusRegister & ~M6502_FLAG_BREAK);
-
-    M6502_SetFlag(cpu, M6502_FLAG_INTERRUPT, 1);
-    cpu->programCounter = M6502_ReadMemoryWord(M6502_IRQVECTOR_ADDRESS);
-
-    cpu->cycles = 7;
+    cpu->pendingInterrupts |= M6502_INTERRUPT_IRQ;
 }
 
 void M6502_NMI(M6502_t* cpu)
 {
-    M6502_PushWord(cpu, cpu->programCounter);
-    M6502_PushByte(cpu, cpu->statusRegister & ~M6502_FLAG_BREAK);
-    M6502_SetFlag(cpu, M6502_FLAG_INTERRUPT, 1);
-
-    cpu->programCounter = M6502_ReadMemoryWord(M6502_NMIVECTOR_ADDRESS);
-    
-    cpu->cycles = 8;
+    cpu->pendingInterrupts |= M6502_INTERRUPT_NMI;
 }
 
 void M6502_Step(M6502_t* cpu)
@@ -474,6 +487,24 @@ void M6502_Step(M6502_t* cpu)
     {
         cpu->cycles--;
         return;
+    }
+
+    if ((cpu->pendingInterrupts & M6502_INTERRUPT_NMI) != 0)
+    {
+        if ((cpu->interruptFlags & M6502_INTERRUPT_NMI) == 0)
+        {
+            M6502_Util_Interrupt(cpu);
+            return;
+        }
+    }
+    else if((cpu->pendingInterrupts & M6502_INTERRUPT_IRQ) != 0)
+    {
+        if ((cpu->interruptFlags == 0)
+        && (M6502_GetFlag(cpu, M6502_FLAG_INTERRUPT) == 0))
+        {
+            M6502_Util_Interrupt(cpu);
+            return;
+        }
     }
 
     M6502_SetFlag(cpu, M6502_FLAG_UNUSED, 1);
@@ -1184,6 +1215,15 @@ static inline void M6502_Opcode_ROR(M6502_t* cpu)
 
 static inline void M6502_Opcode_RTI(M6502_t* cpu)
 {
+    if ((cpu->interruptFlags & M6502_INTERRUPT_NMI) != 0)
+    {
+        cpu->interruptFlags &= ~M6502_INTERRUPT_NMI;
+    }
+    else if ((cpu->interruptFlags & M6502_INTERRUPT_IRQ) != 0)
+    {
+        cpu->interruptFlags &= ~M6502_INTERRUPT_IRQ;
+    }
+
     cpu->statusRegister = M6502_PullByte(cpu);
     cpu->programCounter = M6502_PullWord(cpu);
 }
