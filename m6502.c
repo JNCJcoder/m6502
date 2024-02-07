@@ -1345,7 +1345,7 @@ static inline void M6502_Opcode_TYA(M6502_t* cpu)
 
 static inline void M6502_Opcode_ALR(M6502_t* cpu)
 {
-    uint16_t temporary = (uint16_t)cpu->accumulator & cpu->target;
+    uint16_t temporary = ((uint16_t)cpu->accumulator & cpu->target);
 
     M6502_SetFlag(cpu, M6502_FLAG_CARRY, (uint8_t)(temporary & 0x1));
     
@@ -1359,7 +1359,7 @@ static inline void M6502_Opcode_ALR(M6502_t* cpu)
 
 static inline void M6502_Opcode_ANC(M6502_t* cpu)
 {
-    const uint16_t temporary = (uint16_t)cpu->accumulator & cpu->target;
+    const uint16_t temporary = ((uint16_t)cpu->accumulator & cpu->target);
 
     cpu->accumulator = (uint8_t)(temporary & 0x00FF);
 
@@ -1382,9 +1382,9 @@ static inline void M6502_Opcode_ANE(M6502_t* cpu)
 
 static inline void M6502_Opcode_ARR(M6502_t* cpu)
 {
-    uint16_t temporary = (uint16_t)cpu->accumulator & cpu->target;
-    temporary = temporary >> 1;
-    temporary |= M6502_GetFlag(cpu, M6502_FLAG_CARRY) << 7;
+    uint16_t temporary = ((uint16_t)cpu->accumulator & cpu->target);
+    temporary = (temporary >> 1);
+    temporary |= (M6502_GetFlag(cpu, M6502_FLAG_CARRY) << 7);
 
     cpu->accumulator = (uint8_t)(temporary & 0x00FF);
 
@@ -1440,7 +1440,7 @@ static inline void M6502_Opcode_ISC(M6502_t* cpu)
 
 static inline void M6502_Opcode_LAS(M6502_t* cpu)
 {
-    const uint8_t temporary = cpu->target & cpu->stackPointer;
+    const uint8_t temporary = ((uint8_t)cpu->target & cpu->stackPointer);
 
     cpu->accumulator = temporary;
     cpu->xRegister = temporary;
@@ -1452,11 +1452,11 @@ static inline void M6502_Opcode_LAS(M6502_t* cpu)
 
 static inline void M6502_Opcode_LAX(M6502_t* cpu)
 {
-    cpu->accumulator = cpu->target;
-    cpu->xRegister = cpu->target;
+    cpu->accumulator = (uint8_t)(cpu->target & 0x00FF);
+    cpu->xRegister = (uint8_t)(cpu->target & 0x00FF);
 
-    M6502_ZeroTest(cpu, cpu->xRegister);
-    M6502_NegativeTest(cpu, cpu->xRegister);
+    M6502_ZeroTest(cpu, cpu->target);
+    M6502_NegativeTest(cpu, cpu->target);
 }
 
 static inline void M6502_Opcode_LXA(M6502_t* cpu)
@@ -1473,34 +1473,40 @@ static inline void M6502_Opcode_LXA(M6502_t* cpu)
 
 static inline void M6502_Opcode_RLA(M6502_t* cpu)
 {
-    uint16_t temporary = cpu->target >> 1;
-    temporary |= M6502_GetFlag(cpu, M6502_FLAG_CARRY) << 7;
+    uint16_t temporary = (cpu->target >> 1);
+    temporary |= (M6502_GetFlag(cpu, M6502_FLAG_CARRY) << 7);
 
     M6502_WriteMemoryByte(cpu->address, (uint8_t)(temporary & 0x00FF));
 
     M6502_SetFlag(cpu, M6502_FLAG_CARRY, (uint8_t)(cpu->target & 0x1));
+
+    cpu->target = temporary;
 
     M6502_Opcode_AND(cpu);
 }
 
 static inline void M6502_Opcode_RRA(M6502_t* cpu)
 {
-    uint16_t temporary = cpu->target >> 1;
-    temporary |= M6502_GetFlag(cpu, M6502_FLAG_CARRY) << 7;
+    uint16_t temporary = (cpu->target >> 1);
+    temporary |= (M6502_GetFlag(cpu, M6502_FLAG_CARRY) << 7);
 
     M6502_WriteMemoryByte(cpu->address, (uint8_t)(temporary & 0x00FF));
+
+    cpu->target = temporary;
 
     M6502_Opcode_ADC(cpu);
 }
 
 static inline void M6502_Opcode_SAX(M6502_t* cpu)
 {
-    M6502_WriteMemoryByte(cpu->address, cpu->accumulator & cpu->xRegister);
+    const uint8_t temporary = (cpu->accumulator & cpu->xRegister);
+
+    M6502_WriteMemoryByte(cpu->address, temporary);
 }
 
 static inline void M6502_Opcode_SBX(M6502_t* cpu)
 {
-    uint16_t temporary = (uint16_t)cpu->accumulator & (uint16_t)cpu->xRegister;
+    uint16_t temporary = ((uint16_t)cpu->accumulator & (uint16_t)cpu->xRegister);
     temporary -= cpu->target;
 
     cpu->xRegister = (uint8_t)(temporary & 0x00FF);
@@ -1566,9 +1572,9 @@ static inline void M6502_Opcode_SRE(M6502_t* cpu)
 
 static inline void M6502_Opcode_TAS(M6502_t* cpu)
 {
-    cpu->stackPointer = cpu->xRegister & cpu->accumulator;
+    cpu->stackPointer = (cpu->xRegister & cpu->accumulator);
 
-    uint16_t temporary = cpu->stackPointer & ((cpu->address >> 7) & 1);
+    uint16_t temporary = (cpu->stackPointer & ((cpu->address >> 7) & 1));
     temporary += 1;
 
     M6502_WriteMemoryByte(cpu->address, (uint8_t)(temporary & 0x00FF));
