@@ -71,6 +71,16 @@ static inline void M6502_Address_Indirect(M6502_t* cpu);
 static inline void M6502_Address_IndirectX(M6502_t* cpu);
 static inline void M6502_Address_IndirectY(M6502_t* cpu);
 
+static inline void M6502_Util_WriteResult(M6502_t* cpu, const uint16_t result);
+static inline void M6502_Util_Branch(M6502_t* cpu);
+static inline void M6502_Util_Interrupt(M6502_t* cpu);
+
+static inline void M6502_Opcode_Group01(M6502_t* cpu);
+static inline void M6502_Opcode_Group10(M6502_t* cpu);
+static inline void M6502_Opcode_Group11(M6502_t* cpu);
+static inline void M6502_Opcode_Group00(M6502_t* cpu);
+static inline void M6502_Opcode_Group00_Branch(M6502_t* cpu);
+
 static inline void M6502_Opcode_ADC(M6502_t* cpu);
 static inline void M6502_Opcode_AND(M6502_t* cpu);
 static inline void M6502_Opcode_ASL(M6502_t* cpu);
@@ -396,7 +406,7 @@ static inline void M6502_Util_WriteResult(M6502_t* cpu, const uint16_t result)
     M6502_ExternalWriteMemory(cpu->address, resultToSave);
 }
 
-static inline void M6502_Util_BRANCH(M6502_t* cpu)
+static inline void M6502_Util_Branch(M6502_t* cpu)
 {
     uint16_t address = cpu->programCounter + (int8_t)cpu->address;
 
@@ -434,12 +444,6 @@ static inline void M6502_Util_Interrupt(M6502_t* cpu)
         cpu->cycles = 7;
     }
 }
-
-static inline void M6502_Opcode_Group01(M6502_t* cpu);
-static inline void M6502_Opcode_Group10(M6502_t* cpu);
-static inline void M6502_Opcode_Group11(M6502_t* cpu);
-static inline void M6502_Opcode_Group00(M6502_t* cpu);
-static inline void M6502_Opcode_Group00_Branch(M6502_t* cpu);
 
 
 void M6502_Init(M6502_t* cpu, uint16_t startAddress)
@@ -917,7 +921,7 @@ static inline void M6502_Opcode_BCC(M6502_t* cpu)
 {
     if(M6502_GetFlag(cpu, M6502_FLAG_CARRY) == 0)
     {
-        M6502_Util_BRANCH(cpu);
+        M6502_Util_Branch(cpu);
     }
 }
 
@@ -925,7 +929,7 @@ static inline void M6502_Opcode_BCS(M6502_t* cpu)
 {
     if(M6502_GetFlag(cpu, M6502_FLAG_CARRY) == 1)
     {
-        M6502_Util_BRANCH(cpu);
+        M6502_Util_Branch(cpu);
     }
 }
 
@@ -933,7 +937,7 @@ static inline void M6502_Opcode_BEQ(M6502_t* cpu)
 {
     if(M6502_GetFlag(cpu, M6502_FLAG_ZERO) == 1)
     {
-        M6502_Util_BRANCH(cpu);
+        M6502_Util_Branch(cpu);
     }
 }
 
@@ -949,7 +953,7 @@ static inline void M6502_Opcode_BMI(M6502_t* cpu)
 {
     if(M6502_GetFlag(cpu, M6502_FLAG_NEGATIVE) == 1)
     {
-        M6502_Util_BRANCH(cpu);
+        M6502_Util_Branch(cpu);
     }
 }
 
@@ -957,7 +961,7 @@ static inline void M6502_Opcode_BNE(M6502_t* cpu)
 {
     if(M6502_GetFlag(cpu, M6502_FLAG_ZERO) == 0)
     {
-        M6502_Util_BRANCH(cpu);
+        M6502_Util_Branch(cpu);
     }
 }
 
@@ -965,7 +969,7 @@ static inline void M6502_Opcode_BPL(M6502_t* cpu)
 {
     if(M6502_GetFlag(cpu, M6502_FLAG_NEGATIVE) == 0)
     {
-        M6502_Util_BRANCH(cpu);
+        M6502_Util_Branch(cpu);
     }
 }
 
@@ -982,7 +986,7 @@ static inline void M6502_Opcode_BVC(M6502_t* cpu)
 {
     if(M6502_GetFlag(cpu, M6502_FLAG_OVERFLOW) == 0)
     {
-        M6502_Util_BRANCH(cpu);
+        M6502_Util_Branch(cpu);
     }
 }
 
@@ -990,7 +994,7 @@ static inline void M6502_Opcode_BVS(M6502_t* cpu)
 {
     if(M6502_GetFlag(cpu, M6502_FLAG_OVERFLOW) == 1)
     {
-        M6502_Util_BRANCH(cpu);
+        M6502_Util_Branch(cpu);
     }
 }
 
