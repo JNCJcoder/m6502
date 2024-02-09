@@ -20,11 +20,11 @@ typedef struct
     uint16_t    target;
 } M6502_t;
 
-void M6502_Init(M6502_t* cpu, uint16_t startAddress);
-void M6502_Reset(M6502_t* cpu);
-void M6502_Step(M6502_t* cpu);
-void M6502_IRQ(M6502_t* cpu);
-void M6502_NMI(M6502_t* cpu);
+void M6502_Init(M6502_t *cpu, uint16_t startAddress);
+void M6502_Reset(M6502_t *cpu);
+void M6502_Step(M6502_t *cpu);
+void M6502_IRQ(M6502_t *cpu);
+void M6502_NMI(M6502_t *cpu);
 
 uint8_t  M6502_ExternalReadMemory(uint16_t address);
 void     M6502_ExternalWriteMemory(uint16_t address, uint8_t value);
