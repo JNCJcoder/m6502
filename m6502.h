@@ -14,6 +14,7 @@ typedef struct
     /**/
     uint8_t     cycles;
     uint8_t     opcode;
+    uint8_t     jammed;
     uint8_t     interruptFlags;
     uint8_t     pendingInterrupts;
     uint16_t    address;

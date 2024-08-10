@@ -473,6 +473,7 @@ void M6502_Reset(M6502_t *cpu)
     cpu->stackPointer       = M6502_STACK_START_ADDRESS;
     cpu->interruptFlags     = 0x00;
     cpu->pendingInterrupts  = 0x00;
+    cpu->jammed             = 0x00;
     
     M6502_SetFlag(cpu, M6502_FLAG_INTERRUPT, 1);
     M6502_SetFlag(cpu, M6502_FLAG_UNUSED, 1);
@@ -482,11 +483,15 @@ void M6502_Reset(M6502_t *cpu)
 
 void M6502_IRQ(M6502_t *cpu)
 {
+    if (cpu->jammed == 0xFF) return;
+
     cpu->pendingInterrupts |= M6502_INTERRUPT_IRQ;
 }
 
 void M6502_NMI(M6502_t *cpu)
 {
+    if (cpu->jammed == 0xFF) return;
+
     cpu->pendingInterrupts |= M6502_INTERRUPT_NMI;
 }
 
@@ -1598,8 +1603,7 @@ static inline void M6502_Opcode_USBC(M6502_t *cpu)
 
 static inline void M6502_Opcode_JAM(M6502_t *cpu)
 {
-    while(1)
-    {
-        cpu->target = 0xFF;
-    }
+    cpu->jammed = 0xFF;
+    cpu->pendingInterrupts = 0x00;
+    cpu->programCounter--;
 }
