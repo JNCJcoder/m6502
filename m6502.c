@@ -1378,9 +1378,9 @@ static inline void M6502_Opcode_ANC(M6502_t *cpu)
 
     cpu->accumulator = (uint8_t)(temporary & 0x00FF);
 
-    M6502_CarryTest(cpu, temporary);
     M6502_ZeroTest(cpu, temporary);
     M6502_NegativeTest(cpu, temporary);
+    M6502_SetFlag(cpu, M6502_FLAG_CARRY, (uint8_t)(M6502_GetFlag(cpu, M6502_FLAG_NEGATIVE)));
 }
 
 static inline void M6502_Opcode_ANE(M6502_t *cpu)
@@ -1534,23 +1534,21 @@ static inline void M6502_Opcode_SBX(M6502_t *cpu)
 static inline void M6502_Opcode_SHA(M6502_t *cpu)
 {
     uint16_t temporary = ((uint16_t)cpu->xRegister & (uint16_t)cpu->accumulator);
-    temporary &= ((cpu->address >> 7) & 1) + 1;
+    temporary &= ((cpu->address >> 8) + 1);
 
     M6502_WriteMemoryByte(cpu->address, (uint8_t)(temporary & 0x00FF));
 }
 
 static inline void M6502_Opcode_SHX(M6502_t *cpu)
 {
-    uint16_t temporary = (uint16_t)cpu->xRegister & ((cpu->address >> 7) & 1);
-    temporary += 1;
+    uint16_t temporary = (uint16_t)cpu->xRegister & ((cpu->address >> 8) + 1);
 
     M6502_WriteMemoryByte(cpu->address, (uint8_t)(temporary & 0x00FF));
 }
 
 static inline void M6502_Opcode_SHY(M6502_t *cpu)
 {
-    uint16_t temporary = ((uint16_t)cpu->yRegister & ((cpu->address >> 7) & 1));
-    temporary += 1;
+    uint16_t temporary = ((uint16_t)cpu->yRegister & ((cpu->address >> 8) + 1));
 
     M6502_WriteMemoryByte(cpu->address, (uint8_t)(temporary & 0x00FF));
 }
@@ -1589,8 +1587,7 @@ static inline void M6502_Opcode_TAS(M6502_t *cpu)
 {
     cpu->stackPointer = (cpu->xRegister & cpu->accumulator);
 
-    uint16_t temporary = (cpu->stackPointer & ((cpu->address >> 7) & 1));
-    temporary += 1;
+    uint16_t temporary = (cpu->stackPointer & ((cpu->address >> 8) + 1));
 
     M6502_WriteMemoryByte(cpu->address, (uint8_t)(temporary & 0x00FF));
 }
