@@ -1522,13 +1522,15 @@ static inline void M6502_Opcode_SAX(M6502_t *cpu)
 static inline void M6502_Opcode_SBX(M6502_t *cpu)
 {
     uint16_t temporary = ((uint16_t)cpu->accumulator & (uint16_t)cpu->xRegister);
+    
+    M6502_SetFlag(cpu, M6502_FLAG_CARRY, (uint8_t)(temporary) >= (uint8_t)(cpu->target & 0x00FF));
+    
     temporary -= cpu->target;
 
     cpu->xRegister = (uint8_t)(temporary & 0x00FF);
 
-    M6502_SetFlag(cpu, M6502_FLAG_CARRY, cpu->accumulator >= cpu->xRegister);
-    M6502_SetFlag(cpu, M6502_FLAG_ZERO, cpu->accumulator == cpu->xRegister);
     M6502_NegativeTest(cpu, temporary);
+    M6502_ZeroTest(cpu, temporary);
 }
 
 static inline void M6502_Opcode_SHA(M6502_t *cpu)
