@@ -563,27 +563,132 @@ void M6502_Step(M6502_t *cpu)
         case 0x7A: M6502_Opcode_NOP(cpu);   return;
         case 0xDA: M6502_Opcode_NOP(cpu);   return;
         case 0xFA: M6502_Opcode_NOP(cpu);   return;
-        case 0x80: M6502_Opcode_NOP(cpu);   return;
-        case 0x82: M6502_Opcode_NOP(cpu);   return;
-        case 0x89: M6502_Opcode_NOP(cpu);   return;
-        case 0xC2: M6502_Opcode_NOP(cpu);   return;
-        case 0xE2: M6502_Opcode_NOP(cpu);   return;
-        case 0x04: M6502_Opcode_NOP(cpu);   return;
-        case 0x44: M6502_Opcode_NOP(cpu);   return;
-        case 0x64: M6502_Opcode_NOP(cpu);   return;
-        case 0x14: M6502_Opcode_NOP(cpu);   return;
-        case 0x34: M6502_Opcode_NOP(cpu);   return;
-        case 0x54: M6502_Opcode_NOP(cpu);   return;
-        case 0x74: M6502_Opcode_NOP(cpu);   return;
-        case 0xD4: M6502_Opcode_NOP(cpu);   return;
-        case 0xF4: M6502_Opcode_NOP(cpu);   return;
-        case 0x0C: M6502_Opcode_NOP(cpu);   return;
-        case 0x1C: M6502_Opcode_NOP(cpu);   return;
-        case 0x3C: M6502_Opcode_NOP(cpu);   return;
-        case 0x5C: M6502_Opcode_NOP(cpu);   return;
-        case 0x7C: M6502_Opcode_NOP(cpu);   return;
-        case 0xDC: M6502_Opcode_NOP(cpu);   return;
-        case 0xFC: M6502_Opcode_NOP(cpu);   return;
+        case 0x80:
+        {
+            M6502_Address_Immediate(cpu);
+            M6502_Opcode_NOP(cpu);
+            return;
+        }
+        case 0x82:
+        {
+            M6502_Address_Immediate(cpu);
+            M6502_Opcode_NOP(cpu);
+            return;
+        }
+        case 0x89:
+        {
+            M6502_Address_Immediate(cpu);
+            M6502_Opcode_NOP(cpu);
+            return;
+        }
+        case 0xC2:
+        {
+            M6502_Address_Immediate(cpu);
+            M6502_Opcode_NOP(cpu);
+            return;
+        }
+        case 0xE2:
+        {
+            M6502_Address_Immediate(cpu);
+            M6502_Opcode_NOP(cpu);
+            return;
+        }
+        case 0x04:
+        {
+            M6502_Address_ZeroPage(cpu);
+            M6502_Opcode_NOP(cpu);
+            return;
+        }
+        case 0x44:
+        {
+            M6502_Address_ZeroPage(cpu);
+            M6502_Opcode_NOP(cpu);
+            return;
+        }
+        case 0x64:
+        {
+            M6502_Address_ZeroPage(cpu);
+            M6502_Opcode_NOP(cpu);
+            return;
+        }
+        case 0x14:
+        {
+            M6502_Address_ZeroPageX(cpu);
+            M6502_Opcode_NOP(cpu);
+            return;
+        }
+        case 0x34:
+        {
+            M6502_Address_ZeroPageX(cpu);
+            M6502_Opcode_NOP(cpu);
+            return;
+        }
+        case 0x54:
+        {
+            M6502_Address_ZeroPageX(cpu);
+            M6502_Opcode_NOP(cpu);
+            return;
+        }
+        case 0x74:
+        {
+            M6502_Address_ZeroPageX(cpu);
+            M6502_Opcode_NOP(cpu);
+            return;
+        }
+        case 0xD4:
+        {
+            M6502_Address_ZeroPageX(cpu);
+            M6502_Opcode_NOP(cpu);
+            return;
+        }
+        case 0xF4:
+        {
+            M6502_Address_ZeroPageX(cpu);
+            M6502_Opcode_NOP(cpu);
+            return;
+        }
+        case 0x0C:
+        {
+            M6502_Address_Absolute(cpu);
+            M6502_Opcode_NOP(cpu);
+            return;
+        }
+        case 0x1C: 
+        {
+            M6502_Address_AbsoluteX(cpu);
+            M6502_Opcode_NOP(cpu);
+            return;
+        }
+        case 0x3C:
+        {
+            M6502_Address_AbsoluteX(cpu);
+            M6502_Opcode_NOP(cpu);
+            return;
+        }
+        case 0x5C:
+        {
+            M6502_Address_AbsoluteX(cpu);
+            M6502_Opcode_NOP(cpu);
+            return;
+        }
+        case 0x7C:
+        {
+            M6502_Address_AbsoluteX(cpu);
+            M6502_Opcode_NOP(cpu);
+            return;
+        }
+        case 0xDC:
+        {
+            M6502_Address_AbsoluteX(cpu);
+            M6502_Opcode_NOP(cpu);
+            return;
+        }
+        case 0xFC:
+        {
+            M6502_Address_AbsoluteX(cpu);
+            M6502_Opcode_NOP(cpu);
+            return;
+        }
 
         case 0x02: M6502_Opcode_JAM(cpu);   return;
         case 0x12: M6502_Opcode_JAM(cpu);   return;
