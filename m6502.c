@@ -1574,8 +1574,8 @@ static inline void M6502_Opcode_SRE(M6502_t *cpu)
 {
     uint16_t temporary = (cpu->target >> 1);
 
+    M6502_SetFlag(cpu, M6502_FLAG_CARRY, (uint8_t)(cpu->target & 0x0001));
     M6502_WriteMemoryByte(cpu->address, (uint8_t)(temporary & 0x00FF));
-    M6502_CarryTest(cpu, temporary);
 
     temporary ^= (uint16_t)cpu->accumulator;
 
