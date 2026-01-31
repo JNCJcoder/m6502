@@ -1505,6 +1505,8 @@ static inline void M6502_Opcode_RRA(M6502_t *cpu)
     uint16_t temporary = (cpu->target >> 1);
     temporary |= (M6502_GetFlag(cpu, M6502_FLAG_CARRY) << 7);
 
+    M6502_SetFlag(cpu, M6502_FLAG_CARRY, (uint8_t)(cpu->target & 0x0001));
+
     M6502_WriteMemoryByte(cpu->address, (uint8_t)(temporary & 0x00FF));
 
     cpu->target = temporary;
