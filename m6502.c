@@ -1366,7 +1366,7 @@ static inline void M6502_Opcode_ALR(M6502_t *cpu)
     
     temporary = (temporary >> 1);
 
-    M6502_Util_WriteResult(cpu, temporary);
+    cpu->accumulator = (uint8_t)(temporary & 0x00FF);
 
 	M6502_ZeroTest(cpu, temporary);
 	M6502_NegativeTest(cpu, temporary);
