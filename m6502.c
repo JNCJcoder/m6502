@@ -896,9 +896,27 @@ static inline void M6502_Opcode_Group11(M6502_t *cpu)
         case 0x02:  M6502_Address_Immediate(cpu);   break;
         case 0x03:  M6502_Address_Absolute(cpu);    break;
         case 0x04:  M6502_Address_IndirectY(cpu);   break;
-        case 0x05:  M6502_Address_ZeroPageX(cpu);   break;
+        case 0x05:
+        {
+            if(instruction == 4 || instruction == 5)
+            {
+                M6502_Address_ZeroPageY(cpu);
+                break;
+            }
+            M6502_Address_ZeroPageX(cpu);
+            break;
+        }
         case 0x06:  M6502_Address_AbsoluteY(cpu);   break;
-        case 0x07:  M6502_Address_AbsoluteX(cpu);   break;
+        case 0x07:
+        {
+            if(instruction == 5)
+            {
+                M6502_Address_AbsoluteY(cpu);
+                break;
+            }
+            M6502_Address_AbsoluteX(cpu); 
+            break;
+        }
     }
 
     switch (instruction)
