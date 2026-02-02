@@ -7,6 +7,7 @@ Tests:
 - [x] [6502_functional_test](https://github.com/Klaus2m5/6502_65C02_functional_tests/blob/master/6502_functional_test.a65)
 - [x] [6502_decimal_test](https://github.com/Klaus2m5/6502_65C02_functional_tests/blob/master/6502_decimal_test.a65)
 - [x] [6502_interrupt_test](https://github.com/Klaus2m5/6502_65C02_functional_tests/blob/master/6502_interrupt_test.a65)
+- [x] [nestest.nes](https://github.com/christopherpow/nes-test-roms/blob/master/other/nestest.nes)
 
 ## 🏗️ How-To (Example)
 
