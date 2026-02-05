@@ -31,7 +31,7 @@ void M6502_ExternalWriteMemory(uint16_t address, uint8_t value)
 int main()
 {
     M6502_t cpu;
-    M6502_Init(&cpu, 0x0000);
+    M6502_Init(&cpu);
 
     /* M6502_IRQ(&cpu); /* IRQ */ */
     /* M6502_NMI(&cpu); /* NMI */ */

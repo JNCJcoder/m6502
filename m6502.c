@@ -449,7 +449,7 @@ static inline void M6502_Util_Interrupt(M6502_t *cpu)
 }
 
 
-void M6502_Init(M6502_t *cpu, uint16_t startAddress)
+void M6502_Init(M6502_t *cpu)
 {
     cpu->programCounter = 0x0000;
     cpu->xRegister      = 0x00;
@@ -463,8 +463,6 @@ void M6502_Init(M6502_t *cpu, uint16_t startAddress)
     cpu->target         = 0x0000;
 
     M6502_Reset(cpu);
-
-    cpu->programCounter = startAddress ? startAddress : 0x0000;
 }
 
 void M6502_Reset(M6502_t *cpu)

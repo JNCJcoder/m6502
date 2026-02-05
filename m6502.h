@@ -21,7 +21,7 @@ typedef struct
     uint16_t    target;
 } M6502_t;
 
-void M6502_Init(M6502_t *cpu, uint16_t startAddress);
+void M6502_Init(M6502_t *cpu);
 void M6502_Reset(M6502_t *cpu);
 void M6502_Step(M6502_t *cpu);
 void M6502_IRQ(M6502_t *cpu);
