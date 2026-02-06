@@ -481,15 +481,11 @@ void M6502_Reset(M6502_t *cpu)
 
 void M6502_IRQ(M6502_t *cpu)
 {
-    if (cpu->jammed == 0xFF) return;
-
     cpu->pendingInterrupts |= M6502_INTERRUPT_IRQ;
 }
 
 void M6502_NMI(M6502_t *cpu)
 {
-    if (cpu->jammed == 0xFF) return;
-
     cpu->pendingInterrupts |= M6502_INTERRUPT_NMI;
 }
 
@@ -498,6 +494,11 @@ void M6502_Step(M6502_t *cpu)
     if(cpu->cycles > 0)
     {
         cpu->cycles--;
+        return;
+    }
+
+    if (cpu->jammed == 0xFF)
+    {
         return;
     }
 
@@ -1726,6 +1727,4 @@ static inline void M6502_Opcode_USBC(M6502_t *cpu)
 static inline void M6502_Opcode_JAM(M6502_t *cpu)
 {
     cpu->jammed = 0xFF;
-    cpu->pendingInterrupts = 0x00;
-    cpu->programCounter--;
 }
