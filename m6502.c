@@ -1528,27 +1528,8 @@ static inline void M6502_Opcode_ARR(M6502_t *cpu)
     const uint8_t bit5 = ((cpu->accumulator >> 5u) & 1u);
     const uint8_t bit6 = ((cpu->accumulator >> 6u) & 1u);
 
-    if(bit5 == 1u && bit6 == 1u)
-    {
-        M6502_SetFlag(cpu, M6502_FLAG_CARRY, 1u);
-        M6502_SetFlag(cpu, M6502_FLAG_OVERFLOW, 0u);
-    }
-    else if(bit5 == 0u && bit6 == 0u)
-    {
-        M6502_SetFlag(cpu, M6502_FLAG_CARRY, 0u);     
-        M6502_SetFlag(cpu, M6502_FLAG_OVERFLOW, 0u);     
-    }
-    else if(bit5 == 1 && bit6 == 0)
-    {
-
-        M6502_SetFlag(cpu, M6502_FLAG_CARRY, 0u);
-        M6502_SetFlag(cpu, M6502_FLAG_OVERFLOW, 1u);
-    }
-    else if(bit5 == 0 && bit6 == 1)
-    {
-        M6502_SetFlag(cpu, M6502_FLAG_CARRY, 1u);
-        M6502_SetFlag(cpu, M6502_FLAG_OVERFLOW, 1u);
-    }
+    M6502_SetFlag(cpu, M6502_FLAG_CARRY, bit6);
+    M6502_SetFlag(cpu, M6502_FLAG_OVERFLOW, (bit5 ^ bit6));
 
 	M6502_ZeroTest(cpu, temporary);
 	M6502_NegativeTest(cpu, temporary);
