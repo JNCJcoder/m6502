@@ -45,6 +45,8 @@ static inline uint16_t  M6502_ReadMemoryWord(const uint16_t address);
 static inline void      M6502_WriteMemoryByte(const uint16_t address, const uint8_t value);
 static inline void      M6502_WriteMemoryWord(const uint16_t address, const uint16_t value);
 
+static inline void      M6502_DummyWrite(const uint16_t address, const uint8_t value);
+
 static inline void      M6502_SetFlag(M6502_t *cpu, const uint8_t flag, const uint8_t value);
 static inline uint8_t   M6502_GetFlag(M6502_t *cpu, const uint8_t flag);
 
@@ -185,6 +187,11 @@ static inline void M6502_WriteMemoryWord(const uint16_t address, const uint16_t 
 
     M6502_ExternalWriteMemory(address,      high);
     M6502_ExternalWriteMemory(address + 1u,  low);
+}
+
+static inline void M6502_DummyWrite(const uint16_t address, const uint8_t value)
+{
+    M6502_WriteMemoryByte(address, value);
 }
 
 static inline void M6502_SetFlag(M6502_t *cpu, const uint8_t flag, const uint8_t value)
@@ -1040,6 +1047,11 @@ static inline void M6502_Opcode_AND(M6502_t *cpu)
 
 static inline void M6502_Opcode_ASL(M6502_t *cpu)
 {
+    if(((cpu->opcode & 0x1Cu) >> 2u) != 0x02u)
+    {
+        M6502_DummyWrite(cpu->address, cpu->target);
+    }
+
     const uint16_t temporary = (cpu->target << 1u);
     
     M6502_Util_WriteResult(cpu, temporary);
@@ -1182,6 +1194,8 @@ static inline void M6502_Opcode_DEC(M6502_t *cpu)
 {
     const uint16_t temporary = cpu->target - 1u;
 
+    M6502_DummyWrite(cpu->address, cpu->target);
+
     M6502_Util_WriteResult(cpu, temporary);
 
     M6502_ZeroTest(cpu, temporary);
@@ -1217,6 +1231,8 @@ static inline void M6502_Opcode_EOR(M6502_t *cpu)
 static inline void M6502_Opcode_INC(M6502_t *cpu)
 {
     const uint16_t temporary = cpu->target + 1u;
+
+    M6502_DummyWrite(cpu->address, cpu->target);
 
 	M6502_Util_WriteResult(cpu, temporary);
 	
@@ -1279,6 +1295,11 @@ static inline void M6502_Opcode_LDY(M6502_t *cpu)
 
 static inline void M6502_Opcode_LSR(M6502_t *cpu)
 {
+    if(((cpu->opcode & 0x1Cu) >> 2u) != 0x02u)
+    {
+        M6502_DummyWrite(cpu->address, cpu->target);
+    }
+
 	const uint16_t temporary = (cpu->target >> 1u);
 
     M6502_Util_WriteResult(cpu, temporary);
@@ -1329,6 +1350,11 @@ static inline void M6502_Opcode_PLP(M6502_t *cpu)
 
 static inline void M6502_Opcode_ROL(M6502_t *cpu)
 {
+    if(((cpu->opcode & 0x1Cu) >> 2u) != 0x02u)
+    {
+        M6502_DummyWrite(cpu->address, cpu->target);
+    }
+
     uint16_t temporary = (cpu->target << 1u);
     temporary |= (uint8_t)(M6502_GetFlag(cpu, M6502_FLAG_CARRY));
 	
@@ -1341,6 +1367,11 @@ static inline void M6502_Opcode_ROL(M6502_t *cpu)
 
 static inline void M6502_Opcode_ROR(M6502_t *cpu)
 {
+    if(((cpu->opcode & 0x1Cu) >> 2u) != 0x02u)
+    {
+        M6502_DummyWrite(cpu->address, cpu->target);
+    }
+
     uint16_t temporary = (cpu->target >> 1u);
     temporary |= M6502_GetFlag(cpu, M6502_FLAG_CARRY) << 7u;
 
@@ -1541,6 +1572,8 @@ static inline void M6502_Opcode_DCP(M6502_t *cpu)
     const uint16_t temporary = cpu->target - 1u;
     const uint16_t compare = (uint16_t)cpu->accumulator - temporary;
 
+    M6502_DummyWrite(cpu->address, cpu->target);
+
     M6502_WriteMemoryByte(cpu->address, (uint8_t)(temporary & 0x00FFu));
 
     M6502_SetFlag(cpu, M6502_FLAG_CARRY, cpu->accumulator >= (uint8_t)(temporary & 0x00FFu));
@@ -1550,6 +1583,8 @@ static inline void M6502_Opcode_DCP(M6502_t *cpu)
 
 static inline void M6502_Opcode_ISC(M6502_t *cpu)
 {
+    M6502_DummyWrite(cpu->address, cpu->target);
+
     const uint16_t temporary = ++cpu->target;
 
     M6502_WriteMemoryByte(cpu->address, (uint8_t)(temporary & 0x00FFu));
@@ -1595,6 +1630,8 @@ static inline void M6502_Opcode_RLA(M6502_t *cpu)
     uint16_t temporary = (cpu->target << 1u);
     temporary |= M6502_GetFlag(cpu, M6502_FLAG_CARRY);
 
+    M6502_DummyWrite(cpu->address, cpu->target);
+
     M6502_WriteMemoryByte(cpu->address, (uint8_t)(temporary & 0x00FFu));
 
     M6502_SetFlag(cpu, M6502_FLAG_CARRY, (uint8_t)(cpu->target >> 7u));
@@ -1608,6 +1645,8 @@ static inline void M6502_Opcode_RRA(M6502_t *cpu)
 {
     uint16_t temporary = (cpu->target >> 1u);
     temporary |= (M6502_GetFlag(cpu, M6502_FLAG_CARRY) << 7u);
+
+    M6502_DummyWrite(cpu->address, cpu->target);
 
     M6502_SetFlag(cpu, M6502_FLAG_CARRY, (uint8_t)(cpu->target & 0x0001u));
 
@@ -1665,6 +1704,8 @@ static inline void M6502_Opcode_SLO(M6502_t *cpu)
 {
     uint16_t temporary = (cpu->target << 1u);
 
+    M6502_DummyWrite(cpu->address, cpu->target);
+
     M6502_WriteMemoryByte(cpu->address, (uint8_t)(temporary & 0x00FFu));
     M6502_CarryTest(cpu, temporary);
 
@@ -1679,6 +1720,8 @@ static inline void M6502_Opcode_SLO(M6502_t *cpu)
 static inline void M6502_Opcode_SRE(M6502_t *cpu)
 {
     uint16_t temporary = (cpu->target >> 1u);
+
+    M6502_DummyWrite(cpu->address, cpu->target);
 
     M6502_SetFlag(cpu, M6502_FLAG_CARRY, (uint8_t)(cpu->target & 0x0001u));
     M6502_WriteMemoryByte(cpu->address, (uint8_t)(temporary & 0x00FFu));
