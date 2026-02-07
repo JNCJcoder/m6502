@@ -1263,8 +1263,11 @@ static inline void M6502_Opcode_JMP(M6502_t *cpu)
 
 static inline void M6502_Opcode_JSR(M6502_t *cpu)
 {
-    M6502_Address_Absolute(cpu);
-    M6502_PushWord(cpu, cpu->programCounter - 1u);
+    cpu->address = M6502_ReadMemoryByte(cpu->programCounter++);
+
+    M6502_PushWord(cpu, cpu->programCounter);
+
+    cpu->address |= M6502_ReadMemoryByte(cpu->programCounter) << 8u;
 
     cpu->programCounter = cpu->address;
 }
