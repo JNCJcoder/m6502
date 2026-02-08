@@ -45,6 +45,7 @@ static inline uint16_t  M6502_ReadMemoryWord(const uint16_t address);
 static inline void      M6502_WriteMemoryByte(const uint16_t address, const uint8_t value);
 static inline void      M6502_WriteMemoryWord(const uint16_t address, const uint16_t value);
 
+static inline uint8_t   M6502_DummyRead(const uint16_t address);
 static inline void      M6502_DummyWrite(const uint16_t address, const uint8_t value);
 
 static inline void      M6502_SetFlag(M6502_t *cpu, const uint8_t flag, const uint8_t value);
@@ -60,6 +61,7 @@ static inline void M6502_ZeroTest(M6502_t *cpu, const uint16_t value);
 static inline void M6502_OverFlowTest(M6502_t *cpu, const uint16_t value, const uint16_t result);
 static inline void M6502_NegativeTest(M6502_t *cpu, const uint16_t value);
 
+static inline void M6502_Address_Implied(M6502_t *cpu);
 static inline void M6502_Address_Accumulator(M6502_t *cpu);
 static inline void M6502_Address_Immediate(M6502_t *cpu);
 static inline void M6502_Address_Relative(M6502_t *cpu);
@@ -189,6 +191,11 @@ static inline void M6502_WriteMemoryWord(const uint16_t address, const uint16_t 
     M6502_ExternalWriteMemory(address + 1u,  low);
 }
 
+static inline uint8_t M6502_DummyRead(const uint16_t address)
+{
+    return M6502_ReadMemoryByte(address);
+}
+
 static inline void M6502_DummyWrite(const uint16_t address, const uint8_t value)
 {
     M6502_WriteMemoryByte(address, value);
@@ -262,10 +269,17 @@ static inline void M6502_NegativeTest(M6502_t *cpu, const uint16_t value)
 }
 
 
+static inline void M6502_Address_Implied(M6502_t *cpu)
+{
+    M6502_DummyRead(cpu->programCounter);
+}
+
 static inline void M6502_Address_Accumulator(M6502_t *cpu)
 {
     cpu->address    = cpu->accumulator;
     cpu->target     = cpu->accumulator;
+
+    M6502_DummyRead(cpu->programCounter);
 }
 
 static inline void M6502_Address_Immediate(M6502_t *cpu)
@@ -303,6 +317,9 @@ static inline void M6502_Address_AbsoluteX(M6502_t *cpu)
 
     if(pageTest != (cpu->address & 0xFF00u))
     {
+        uint16_t dummyAddress = pageTest | (cpu->address & 0x00FFu);
+        M6502_DummyRead(dummyAddress);
+
         cpu->cycles++;
     }
 
@@ -320,6 +337,9 @@ static inline void M6502_Address_AbsoluteY(M6502_t *cpu)
 
     if(pageTest != (cpu->address & 0xFF00u))
     {
+        uint16_t dummyAddress = pageTest | (cpu->address & 0x00FFu);
+        M6502_DummyRead(dummyAddress);
+
         cpu->cycles++;
     }
 
@@ -335,6 +355,9 @@ static inline void M6502_Address_ZeroPage(M6502_t *cpu)
 static inline void M6502_Address_ZeroPageX(M6502_t *cpu)
 {
     uint16_t temporary = (uint16_t)M6502_ReadMemoryByte(cpu->programCounter++);
+
+    M6502_DummyRead(temporary);
+
     temporary += (uint16_t)cpu->xRegister;
     temporary &= 0x00FFu;
 
@@ -345,6 +368,9 @@ static inline void M6502_Address_ZeroPageX(M6502_t *cpu)
 static inline void M6502_Address_ZeroPageY(M6502_t *cpu)
 {
     uint16_t temporary = (uint16_t)M6502_ReadMemoryByte(cpu->programCounter++);
+
+    M6502_DummyRead(temporary);
+
     temporary += (uint16_t)cpu->yRegister;
     temporary &= 0x00FFu;
 
@@ -368,6 +394,8 @@ static inline void M6502_Address_Indirect(M6502_t *cpu)
 static inline void M6502_Address_IndirectX(M6502_t *cpu)
 {
     uint16_t pointer = (uint16_t)M6502_ReadMemoryByte(cpu->programCounter++);
+    M6502_DummyRead(pointer);
+
     pointer += (uint16_t)cpu->xRegister;
     pointer &= 0xFFu;
 
@@ -393,6 +421,7 @@ static inline void M6502_Address_IndirectY(M6502_t *cpu)
 	
 	if ((pointerResult & 0xFF00u) != (cpu->address & 0xFF00u))
     {
+        M6502_DummyRead(pointerResult);
         cpu->cycles++;
     }
 
@@ -420,17 +449,22 @@ static inline void M6502_Util_Branch(M6502_t *cpu)
 {
     uint16_t address = cpu->programCounter + (int8_t)cpu->address;
 
+    M6502_DummyRead(cpu->programCounter);
+    cpu->cycles++;
+
     if((address & 0xFF00u) != (cpu->programCounter & 0xFF00u))
     {
+        M6502_DummyRead(address);
         cpu->cycles++;
     }
-    cpu->cycles++;
 
     cpu->programCounter = address;
 }
 
 static inline void M6502_Util_Interrupt(M6502_t *cpu)
 {
+    M6502_DummyRead(cpu->programCounter);
+
     M6502_PushWord(cpu, cpu->programCounter);
     M6502_PushByte(cpu, (cpu->statusRegister & ~M6502_FLAG_BREAK));
     M6502_SetFlag(cpu, M6502_FLAG_INTERRUPT, 1u);
@@ -539,36 +573,177 @@ void M6502_Step(M6502_t *cpu)
         case 0x40u: M6502_Opcode_RTI(cpu);   return;
         case 0x60u: M6502_Opcode_RTS(cpu);   return;
 
-        case 0x08u: M6502_Opcode_PHP(cpu);   return;
-        case 0x18u: M6502_Opcode_CLC(cpu);   return;
-        case 0x28u: M6502_Opcode_PLP(cpu);   return;
-        case 0x38u: M6502_Opcode_SEC(cpu);   return;
-        case 0x48u: M6502_Opcode_PHA(cpu);   return;
-        case 0x58u: M6502_Opcode_CLI(cpu);   return;
-        case 0x68u: M6502_Opcode_PLA(cpu);   return;
-        case 0x78u: M6502_Opcode_SEI(cpu);   return;
-        case 0x88u: M6502_Opcode_DEY(cpu);   return;
-        case 0x8Au: M6502_Opcode_TXA(cpu);   return;
-        case 0x98u: M6502_Opcode_TYA(cpu);   return;
-        case 0x9Au: M6502_Opcode_TXS(cpu);   return;
-        case 0xA8u: M6502_Opcode_TAY(cpu);   return;
-        case 0xAAu: M6502_Opcode_TAX(cpu);   return;
-        case 0xB8u: M6502_Opcode_CLV(cpu);   return;
-        case 0xBAu: M6502_Opcode_TSX(cpu);   return;
-        case 0xC8u: M6502_Opcode_INY(cpu);   return;
-        case 0xCAu: M6502_Opcode_DEX(cpu);   return;
-        case 0xD8u: M6502_Opcode_CLD(cpu);   return;
-        case 0xE8u: M6502_Opcode_INX(cpu);   return;
-        case 0xF8u: M6502_Opcode_SED(cpu);   return;
+        case 0x08u:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_PHP(cpu);
+            return;
+        }
+        case 0x18u:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_CLC(cpu);
+            return;
+        }
+        case 0x28u:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_PLP(cpu);
+            return;
+        }
+        case 0x38u:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_SEC(cpu);
+            return;
+        }
+        case 0x48u:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_PHA(cpu);
+            return;
+        }
+        case 0x58u:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_CLI(cpu);
+            return;
+        }
+        case 0x68u:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_PLA(cpu);
+            return;
+        }
+        case 0x78u:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_SEI(cpu);
+            return;
+        }
+        case 0x88u:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_DEY(cpu);
+            return;
+        }
+        case 0x8Au:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_TXA(cpu);
+            return;
+        }
+        case 0x98u:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_TYA(cpu);
+            return;
+        }
+        case 0x9Au:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_TXS(cpu);
+            return;
+        }
+        case 0xA8u:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_TAY(cpu);
+            return;
+        }
+        case 0xAAu:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_TAX(cpu);
+            return;
+        }
+        case 0xB8u:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_CLV(cpu);
+            return;
+        }
+        case 0xBAu:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_TSX(cpu);
+            return;
+        }
+        case 0xC8u:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_INY(cpu);
+            return;
+        }
+        case 0xCAu:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_DEX(cpu);
+            return;
+        }
+        case 0xD8u:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_CLD(cpu);
+            return;
+        }
+        case 0xE8u:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_INX(cpu);
+            return;
+        }
+        case 0xF8u:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_SED(cpu);
+            return;
+        }
 
-        case 0xEAu: M6502_Opcode_NOP(cpu);   return;
+        case 0xEAu:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_NOP(cpu);
+            return;
+        }
 
-        case 0x1Au: M6502_Opcode_NOP(cpu);   return;
-        case 0x3Au: M6502_Opcode_NOP(cpu);   return;
-        case 0x5Au: M6502_Opcode_NOP(cpu);   return;
-        case 0x7Au: M6502_Opcode_NOP(cpu);   return;
-        case 0xDAu: M6502_Opcode_NOP(cpu);   return;
-        case 0xFAu: M6502_Opcode_NOP(cpu);   return;
+        case 0x1Au:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_NOP(cpu);
+            return;
+        }
+        case 0x3Au:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_NOP(cpu);
+            return;
+        }
+        case 0x5Au:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_NOP(cpu);
+            return;
+        }
+        case 0x7Au:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_NOP(cpu);
+            return;
+        }
+        case 0xDAu:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_NOP(cpu);
+            return;
+        }
+        case 0xFAu:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_NOP(cpu);
+            return;
+        }
+
         case 0x80u:
         {
             M6502_Address_Immediate(cpu);
@@ -696,18 +871,78 @@ void M6502_Step(M6502_t *cpu)
             return;
         }
 
-        case 0x02u: M6502_Opcode_JAM(cpu);   return;
-        case 0x12u: M6502_Opcode_JAM(cpu);   return;
-        case 0x22u: M6502_Opcode_JAM(cpu);   return;
-        case 0x32u: M6502_Opcode_JAM(cpu);   return;
-        case 0x42u: M6502_Opcode_JAM(cpu);   return;
-        case 0x52u: M6502_Opcode_JAM(cpu);   return;
-        case 0x62u: M6502_Opcode_JAM(cpu);   return;
-        case 0x72u: M6502_Opcode_JAM(cpu);   return;
-        case 0x92u: M6502_Opcode_JAM(cpu);   return;
-        case 0xB2u: M6502_Opcode_JAM(cpu);   return;
-        case 0xD2u: M6502_Opcode_JAM(cpu);   return;
-        case 0xF2u: M6502_Opcode_JAM(cpu);   return;
+        case 0x02u:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_JAM(cpu);
+            return;
+        }
+        case 0x12u:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_JAM(cpu);
+            return;
+        }
+        case 0x22u:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_JAM(cpu);
+            return;
+        }
+        case 0x32u:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_JAM(cpu);
+            return;
+        }
+        case 0x42u:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_JAM(cpu);
+            return;
+        }
+        case 0x52u:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_JAM(cpu);
+            return;
+        }
+        case 0x62u:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_JAM(cpu);
+            return;
+        }
+        case 0x72u:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_JAM(cpu);
+            return;
+        }
+        case 0x92u:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_JAM(cpu);
+            return;
+        }
+        case 0xB2u:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_JAM(cpu);
+            return;
+        }
+        case 0xD2u:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_JAM(cpu);
+            return;
+        }
+        case 0xF2u:
+        {
+            M6502_Address_Implied(cpu);
+            M6502_Opcode_JAM(cpu);
+            return;
+        }
 
         case 0x4Bu:
         {
@@ -1120,7 +1355,9 @@ static inline void M6502_Opcode_BPL(M6502_t *cpu)
 
 static inline void M6502_Opcode_BRK(M6502_t *cpu)
 {
-    M6502_PushWord(cpu, ++cpu->programCounter);
+    M6502_DummyRead(cpu->programCounter++);
+
+    M6502_PushWord(cpu, cpu->programCounter);
     M6502_PushByte(cpu, (cpu->statusRegister | M6502_FLAG_BREAK));
     M6502_SetFlag(cpu, M6502_FLAG_INTERRUPT, 1u);
 
@@ -1265,6 +1502,8 @@ static inline void M6502_Opcode_JSR(M6502_t *cpu)
 {
     cpu->address = M6502_ReadMemoryByte(cpu->programCounter++);
 
+    M6502_DummyRead(M6502_STACK_ADDRESS | cpu->stackPointer);
+
     M6502_PushWord(cpu, cpu->programCounter);
 
     cpu->address |= M6502_ReadMemoryByte(cpu->programCounter) << 8u;
@@ -1340,6 +1579,8 @@ static inline void M6502_Opcode_PHP(M6502_t *cpu)
 
 static inline void M6502_Opcode_PLA(M6502_t *cpu)
 {
+    M6502_DummyRead(M6502_STACK_ADDRESS | cpu->stackPointer);
+
 	cpu->accumulator = M6502_PullByte(cpu);
 
     M6502_ZeroTest(cpu, (uint16_t)(cpu->accumulator));
@@ -1348,6 +1589,8 @@ static inline void M6502_Opcode_PLA(M6502_t *cpu)
 
 static inline void M6502_Opcode_PLP(M6502_t *cpu)
 {
+    M6502_DummyRead(M6502_STACK_ADDRESS | cpu->stackPointer);
+
 	cpu->statusRegister = (M6502_PullByte(cpu) | M6502_FLAG_UNUSED);
 }
 
@@ -1396,13 +1639,19 @@ static inline void M6502_Opcode_RTI(M6502_t *cpu)
         cpu->interruptFlags &= ~M6502_INTERRUPT_IRQ;
     }
 
+    M6502_DummyRead(M6502_STACK_ADDRESS | cpu->stackPointer);
+
     cpu->statusRegister = M6502_PullByte(cpu);
     cpu->programCounter = M6502_PullWord(cpu);
 }
 
 static inline void M6502_Opcode_RTS(M6502_t *cpu)
 {
-    cpu->programCounter = M6502_PullWord(cpu) + 1u;
+    M6502_DummyRead(M6502_STACK_ADDRESS | cpu->stackPointer);
+
+    cpu->programCounter = M6502_PullWord(cpu);
+
+    M6502_DummyRead(cpu->programCounter++);
 }
 
 static inline void M6502_Opcode_SBC(M6502_t *cpu)
