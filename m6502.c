@@ -21,6 +21,8 @@ static const uint8_t M6502_INTERRUPT_IRQ    = 0x0Fu;
 
 static const uint8_t M6502_MAGIC_CONSTANT   = 0x00u;
 
+static const uint16_t M6502_JAMMED_ADDRESS  = 0xFFFFu;
+
 static const uint8_t M6502_OPCODE_CYCLES[0x100] = {
     7u, 6u, 2u, 8u, 3u, 3u, 5u, 5u, 3u, 2u, 2u, 2u, 4u, 4u, 6u, 6u,
     2u, 5u, 2u, 8u, 4u, 4u, 6u, 6u, 2u, 4u, 2u, 7u, 4u, 4u, 7u, 7u,
@@ -540,6 +542,7 @@ void M6502_Step(M6502_t *cpu)
 
     if (cpu->jammed == 0xFFu)
     {
+        M6502_DummyRead(M6502_JAMMED_ADDRESS);
         return;
     }
 
@@ -2003,5 +2006,7 @@ static inline void M6502_Opcode_USBC(M6502_t *cpu)
 
 static inline void M6502_Opcode_JAM(M6502_t *cpu)
 {
+    M6502_DummyRead(M6502_JAMMED_ADDRESS - 1u);
+
     cpu->jammed = 0xFFu;
 }
