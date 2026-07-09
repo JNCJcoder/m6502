@@ -1,5 +1,7 @@
 # M6502 - MOS 6502 Emulator
 
+<img src="./.github/m6502.webp" style="width:500px">
+
 A NMOS 6502 Emulator written in C.
 
 Tests:
